@@ -2,6 +2,7 @@
 import os
 from datetime import datetime
 from typing import Literal, Dict, List, Optional
+import json
 from uuid import uuid4, UUID
 from dotenv import load_dotenv
 
@@ -48,6 +49,7 @@ class Message(BaseModel):
 
 DEBATES: Dict[UUID, Debate] = {}
 MESSAGES: Dict[UUID, List[Message]] = {}  # keyed by debate_id
+SCORES: Dict[UUID, "ScoreBreakdown"] = {}
 
 # ---------- Schemas (I/O) ----------
 class DebateCreate(BaseModel):
@@ -91,6 +93,27 @@ class TurnOut(BaseModel):
 class TranscribeOut(BaseModel):
     text: str
     language: Optional[str] = None
+
+
+class ScoreMetrics(BaseModel):
+    clarity: float
+    structure: float
+    engagement: float
+    balance: float
+
+
+class ScoreBreakdown(BaseModel):
+    overall: float
+    metrics: ScoreMetrics
+    feedback: str = "No overall feedback provided."
+    clarity_feedback: str = "No clarity feedback provided."
+    structure_feedback: str = "No structure feedback provided."
+    engagement_feedback: str = "No engagement feedback provided."
+    balance_feedback: str = "No balance feedback provided."
+
+
+class ScoreOut(ScoreBreakdown):
+    debate_id: UUID
 
 # ---------- Helpers ----------
 def second_speaker_for_round(starter: Speaker) -> Speaker:
@@ -144,6 +167,30 @@ def generate_ai_turn_text(debate: Debate, messages: List[Message]) -> str:
         "Signpost arguments. 1–2 short paragraphs for turns. "
         f"{topic_context}. Engage with the arguments presented and provide thoughtful counterarguments."
     )
+    print(topic_context)
+    sys = (f'''
+    You are DebaterGPT, a skilled competitive debater trained in APDA, Public Forum, and WSDC styles.
+
+    When given a motion, argue as if you were in a live debate round, using clear signposting, logical flow, and rhetorical polish.
+
+    If the prompt says “You: For”, argue in favor of the motion.
+
+    If it says “You: Against”, argue against the motion for the user to rebut.
+
+    Debate Style Rules:
+
+    Start with a brief roadmap (“First, I’ll define terms, then present two contentions…”).
+
+    Use contentions, warrants, and impacts in a clear structure.
+
+    Weigh arguments explicitly (“We outweigh on magnitude and probability…”).
+
+    Maintain a confident, persuasive tone fit for tournament debate.
+
+    Always respond in the form of a debate speech, not an essay or explanation.
+
+    The given topic is {topic_context}.
+    ''')
     convo = []
     for m in messages:
         role = "user" if m.speaker == "user" else "assistant"
@@ -176,6 +223,129 @@ def transcribe_with_whisper(audio_bytes: bytes, filename: str = "audio.wav") -> 
     bio.name = filename
     resp = client.audio.transcriptions.create(model="whisper-1", file=bio)
     return resp.text
+
+
+def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakdown:
+    if not client:
+        raise HTTPException(503, "Scoring requires OpenAI API key")
+
+    if not messages:
+        return ScoreBreakdown(
+            overall=0.0,
+            metrics=ScoreMetrics(clarity=0.0, structure=0.0, engagement=0.0, balance=0.0),
+            feedback="No debate content available to score.",
+            clarity_feedback="No clarity feedback available.",
+            structure_feedback="No structure feedback available.",
+            engagement_feedback="No engagement feedback available.",
+            balance_feedback="No balance feedback available."
+        )
+
+    convo: List[Dict[str, str]] = []
+    for msg in messages:
+        role = "user" if msg.speaker == "user" else "assistant"
+        speaker = msg.speaker.upper()
+        convo.append({
+            "role": role,
+            "content": f"[Round {msg.round_no} · {speaker}] {msg.content}"
+        })
+
+    system_prompt = (
+        "You are DebateJudgeGPT, an expert debate adjudicator across APDA, Public Forum, and WSDC formats.\n"
+        "You will be given the full transcript of a debate between a human debater (`user`) and an AI sparring partner (`assistant`).\n"
+        "Your task is to evaluate ONLY the human debater's performance. The AI serves purely as opposition context.\n\n"
+        "Score the human on these metrics (0-100 each):\n"
+        "1. Clarity & Delivery – vocal clarity, persuasive tone, pacing, accessibility of arguments.\n"
+        "2. Structure & Organization – use of roadmaps, contention structure, logical flow, internal signposting.\n"
+        "3. Engagement & Clash – responsiveness to the AI's points, refutation quality, impact weighing, comparative analysis.\n"
+        "4. Strategic Balance & Completion – effective use of allotted rounds, time management, closing strength, and overall debate completeness.\n\n"
+        "Provide:\n"
+        "- `overall_score`: holistic score (0-100) for the human debater.\n"
+        "- `feedback`: a comprehensive 4-6 sentence paragraph synthesizing strengths, critical weaknesses, and concrete next steps.\n"
+        "- For each metric, include a numeric subscore (`*_score`) AND a two-sentence targeted coaching tip (`*_feedback`) with actionable guidance referencing specific debate behaviors.\n"
+        "Return ONLY a JSON object with keys: overall_score, feedback, clarity_score, clarity_feedback, "
+        "structure_score, structure_feedback, engagement_score, engagement_feedback, "
+        "balance_score, balance_feedback.\n"
+        "Do not include any additional text outside the JSON."
+    )
+
+    prompt = [
+        {"role": "system", "content": system_prompt},
+        *convo,
+        {
+            "role": "user",
+            "content": (
+                "Judge this debate according to the instructions. "
+                "Be fair, constructive, and reference specific debate behaviors in your feedback."
+            ),
+        },
+    ]
+
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=prompt,
+            temperature=0.3,
+        )
+    except Exception as exc:
+        raise HTTPException(502, f"Scoring failed: {exc}") from exc
+
+    raw = resp.choices[0].message.content.strip()
+
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        raise HTTPException(502, f"Scoring response malformed: {raw}")
+
+    def _get_float(key: str) -> float:
+        value = parsed.get(key)
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return 0.0
+        return 0.0
+
+    metrics = ScoreMetrics(
+        clarity=round(_get_float("clarity_score"), 1),
+        structure=round(_get_float("structure_score"), 1),
+        engagement=round(_get_float("engagement_score"), 1),
+        balance=round(_get_float("balance_score"), 1),
+    )
+
+    overall = round(_get_float("overall_score"), 1)
+
+    return ScoreBreakdown(
+        overall=overall,
+        metrics=metrics,
+        feedback=parsed.get("feedback", "No overall feedback provided."),
+        clarity_feedback=parsed.get("clarity_feedback", "No clarity feedback provided."),
+        structure_feedback=parsed.get("structure_feedback", "No structure feedback provided."),
+        engagement_feedback=parsed.get("engagement_feedback", "No engagement feedback provided."),
+        balance_feedback=parsed.get("balance_feedback", "No balance feedback provided."),
+    )
+
+
+def _score_out_from_breakdown(debate_id: UUID, breakdown: ScoreBreakdown) -> ScoreOut:
+    # Ensure we have a ScoreBreakdown instance with all fields populated
+    if not isinstance(breakdown, ScoreBreakdown):
+        breakdown = ScoreBreakdown.model_validate(breakdown)
+
+    metrics = breakdown.metrics or ScoreMetrics(
+        clarity=0.0, structure=0.0, engagement=0.0, balance=0.0
+    )
+
+    return ScoreOut(
+        debate_id=debate_id,
+        overall=breakdown.overall,
+        metrics=metrics,
+        feedback=breakdown.feedback,
+        clarity_feedback=breakdown.clarity_feedback,
+        structure_feedback=breakdown.structure_feedback,
+        engagement_feedback=breakdown.engagement_feedback,
+        balance_feedback=breakdown.balance_feedback,
+    )
 
 # ---------- 1) Create debate ----------
 @app.post("/v1/debates", response_model=DebateOut, status_code=201)
@@ -309,6 +479,50 @@ async def transcribe(file: UploadFile = File(...)):
         raise HTTPException(502, f"Transcription failed: {e}")
 
     return TranscribeOut(text=text)
+
+
+@app.post("/v1/debates/{debate_id}/score", response_model=ScoreOut)
+def score_debate(debate_id: UUID):
+    debate = DEBATES.get(debate_id)
+    if not debate:
+        raise HTTPException(404, "Debate not found")
+    if debate.status != "completed":
+        raise HTTPException(409, "Debate must be completed before scoring")
+
+    messages = MESSAGES.get(debate_id, [])
+    breakdown = compute_debate_score(debate, messages)
+    SCORES[debate_id] = breakdown
+
+    return _score_out_from_breakdown(debate_id, breakdown)
+
+
+@app.get("/v1/debates/{debate_id}/score", response_model=ScoreOut)
+def get_score(debate_id: UUID):
+    debate = DEBATES.get(debate_id)
+    if not debate:
+        raise HTTPException(404, "Debate not found")
+
+    breakdown = SCORES.get(debate_id)
+    if not breakdown:
+        raise HTTPException(404, "Score not found. Score the debate first.")
+
+    # Backfill missing feedback fields for legacy scores
+    if not getattr(breakdown, "feedback", None):
+        messages = MESSAGES.get(debate_id, [])
+        try:
+            breakdown = compute_debate_score(debate, messages)
+            SCORES[debate_id] = breakdown
+        except HTTPException:
+            breakdown = ScoreBreakdown(
+                overall=getattr(breakdown, "overall", 0.0),
+                metrics=getattr(
+                    breakdown,
+                    "metrics",
+                    ScoreMetrics(clarity=0.0, structure=0.0, engagement=0.0, balance=0.0),
+                ),
+            )
+
+    return _score_out_from_breakdown(debate_id, breakdown)
 
 
 # ---------- Health ----------

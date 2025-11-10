@@ -8,6 +8,9 @@ function App() {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [score, setScore] = useState(null)
+  const [scoring, setScoring] = useState(false)
+  const [scoreError, setScoreError] = useState(null)
   
   // Setup state
   const [topic, setTopic] = useState('')
@@ -18,17 +21,40 @@ function App() {
   // Input state
   const [argument, setArgument] = useState('')
   const [audioFile, setAudioFile] = useState(null)
-  const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const fetchScore = async (targetId = debateId, compute = false) => {
+    if (!targetId) return null
+    setScoring(true)
+    try {
+      const method = compute ? 'POST' : 'GET'
+      const response = await fetch(`${API_BASE}/v1/debates/${targetId}/score`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setScore(data)
+        setScoreError(null)
+        return data
+      }
+
+      if (response.status === 404 && !compute) {
+        // Score not yet generated; compute it
+        return await fetchScore(targetId, true)
+      }
+
+      const errorText = await response.text()
+      throw new Error(errorText || 'Failed to fetch score')
+    } catch (error) {
+      console.error('Error fetching score:', error)
+      setScoreError(error.message)
+      return null
+    } finally {
+      setScoring(false)
+    }
   }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
   useEffect(() => {
     if (debateId) {
       fetchDebate()
@@ -37,20 +63,23 @@ function App() {
     }
   }, [debateId])
 
-  const fetchDebate = async () => {
-    if (!debateId) return null
+  const fetchDebate = async (targetId = debateId) => {
+    if (!targetId) return null
     try {
-      const response = await fetch(`${API_BASE}/v1/debates/${debateId}`)
+      const response = await fetch(`${API_BASE}/v1/debates/${targetId}`)
       if (!response.ok) throw new Error('Failed to fetch debate')
       const data = await response.json()
       setDebate(data)
       setMessages(data.messages || [])
-      
-      // Auto-scroll and focus input if it's user's turn
-      if (data.status === 'active' && data.next_speaker === 'user') {
-        setTimeout(() => inputRef.current?.focus(), 100)
+
+      if (
+        data.status === 'completed' &&
+        targetId === debateId &&
+        (!score || score.debate_id !== targetId) &&
+        !scoring
+      ) {
+        fetchScore(targetId, false)
       }
-      
       return data
     } catch (error) {
       console.error('Error fetching debate:', error)
@@ -76,7 +105,7 @@ function App() {
         body: JSON.stringify({
           num_rounds: numRounds,
           starter,
-          title: `${topic} (You: ${position})`,
+          title: `${topic} (User: ${position}, You take the opposite position)`,
         }),
       })
 
@@ -85,10 +114,12 @@ function App() {
       setDebateId(data.id)
       setDebate(data)
       setSetupComplete(true)
-      
+      setScore(null)
+      setScoreError(null)
+
       // If assistant starts, generate their first turn
       if (starter === 'assistant') {
-        setTimeout(() => generateAITurn(), 500)
+        setTimeout(() => generateAITurn(data.id), 500)
       }
     } catch (error) {
       alert('Failed to start debate: ' + error.message)
@@ -170,8 +201,10 @@ function App() {
         console.log('Triggering AI turn generation...')
         // Small delay to ensure UI updates
         setTimeout(() => {
-          generateAITurn()
+          generateAITurn(debateId)
         }, 800)
+      } else if (turnData.status === 'completed') {
+        await fetchScore(debateId, false)
       }
     } catch (error) {
       alert('Failed to submit argument: ' + error.message)
@@ -180,12 +213,12 @@ function App() {
     }
   }
 
-  const generateAITurn = async () => {
-    if (!debateId) return
-    
+  const generateAITurn = async (targetId = debateId) => {
+    if (!targetId) return
+
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE}/v1/debates/${debateId}/auto-turn`, {
+      const response = await fetch(`${API_BASE}/v1/debates/${targetId}/auto-turn`, {
         method: 'POST',
       })
       if (!response.ok) {
@@ -198,12 +231,10 @@ function App() {
       console.log('AI turn generated:', aiTurnData)
       
       // Immediately refresh to show the new message
-      await fetchDebate()
-      
-      // Scroll to bottom after a brief delay to ensure DOM updates
-      setTimeout(() => {
-        scrollToBottom()
-      }, 300)
+      const updated = await fetchDebate(targetId)
+      if (updated?.status === 'completed') {
+        await fetchScore(targetId, false)
+      }
     } catch (error) {
       console.error('Error generating AI turn:', error)
       alert('Failed to generate AI response: ' + error.message)
@@ -221,6 +252,7 @@ function App() {
       })
       if (!response.ok) throw new Error('Failed to finish debate')
       await fetchDebate()
+      await fetchScore(debateId, true)
     } catch (error) {
       alert('Failed to finish debate: ' + error.message)
     } finally {
@@ -235,12 +267,14 @@ function App() {
     setSetupComplete(false)
     setArgument('')
     setAudioFile(null)
+    setScore(null)
+    setScoreError(null)
   }
 
   // Setup screen
   if (!setupComplete) {
     return (
-      <div className="app">
+      <div className="app setup-mode">
         <div className="setup-container">
           <div className="setup-card">
             <h1>DebateLab</h1>
@@ -304,7 +338,7 @@ function App() {
 
   // Debate screen
   return (
-    <div className="app">
+    <div className="app debate-mode">
       <header className="debate-header">
         <div className="header-content">
           <div>
@@ -367,8 +401,6 @@ function App() {
               </div>
             </div>
           )}
-          
-          <div ref={messagesEndRef} />
         </div>
 
         {debate?.status === 'active' && debate?.next_speaker === 'user' && (
@@ -416,7 +448,56 @@ function App() {
 
         {debate?.status === 'completed' && (
           <div className="debate-ended">
-            <p>Debate completed! Start a new debate to continue practicing.</p>
+            <p>Debate completed! Review your score or start a new debate to continue practicing.</p>
+            {score ? (
+              <div className="score-card">
+                <h3>Debate Score</h3>
+                <p className="overall-score">{score.overall.toFixed(1)} / 100</p>
+                <div className="score-metrics">
+                  <div>
+                    <span>Clarity & Delivery</span>
+                    <strong>{score.metrics?.clarity?.toFixed(1) ?? '–'}</strong>
+                    <small>{score.clarity_feedback}</small>
+                  </div>
+                  <div>
+                    <span>Structure & Organization</span>
+                    <strong>{score.metrics?.structure?.toFixed(1) ?? '–'}</strong>
+                    <small>{score.structure_feedback}</small>
+                  </div>
+                  <div>
+                    <span>Engagement & Clash</span>
+                    <strong>{score.metrics?.engagement?.toFixed(1) ?? '–'}</strong>
+                    <small>{score.engagement_feedback}</small>
+                  </div>
+                  <div>
+                    <span>Balance & Completion</span>
+                    <strong>{score.metrics?.balance?.toFixed(1) ?? '–'}</strong>
+                    <small>{score.balance_feedback}</small>
+                  </div>
+                </div>
+                <div className="score-feedback">
+                  <h4>Judge Feedback</h4>
+                  <p>{score.feedback}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="score-card">
+                <p className="muted">
+                  {scoring
+                    ? 'Calculating score...'
+                    : scoreError
+                      ? `Unable to load score: ${scoreError}`
+                      : 'Score not available yet.'}
+                </p>
+                <button
+                  className="btn-secondary"
+                  onClick={() => fetchScore(debateId, true)}
+                  disabled={scoring}
+                >
+                  {scoring ? 'Scoring...' : 'Calculate Score'}
+                </button>
+              </div>
+            )}
             <button className="btn-primary" onClick={resetDebate}>
               New Debate
             </button>
