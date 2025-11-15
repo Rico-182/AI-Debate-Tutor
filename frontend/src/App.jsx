@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 function App() {
   const [debateId, setDebateId] = useState(null)
@@ -12,15 +12,19 @@ function App() {
   const [scoring, setScoring] = useState(false)
   const [scoreError, setScoreError] = useState(null)
   
-  // Setup state
+  // Landing/Setup state
+  const [showLanding, setShowLanding] = useState(true)
   const [topic, setTopic] = useState('')
   const [position, setPosition] = useState('for') // 'for' or 'against'
-  const [numRounds, setNumRounds] = useState(3)
+  const [numRounds, setNumRounds] = useState(1)
   const [setupComplete, setSetupComplete] = useState(false)
   
   // Input state
   const [argument, setArgument] = useState('')
   const [audioFile, setAudioFile] = useState(null)
+  const [recording, setRecording] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const [mediaRecorder, setMediaRecorder] = useState(null)
   const inputRef = useRef(null)
 
   const fetchScore = async (targetId = debateId, compute = false) => {
@@ -145,6 +149,50 @@ function App() {
     }
   }
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      const audioChunks = []
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data)
+        }
+      }
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+        const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' })
+        
+        setTranscribing(true)
+        const transcribed = await transcribeAudio(audioFile)
+        if (transcribed) {
+          setArgument(prev => prev ? `${prev} ${transcribed}` : transcribed)
+        }
+        setTranscribing(false)
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      recorder.start()
+      setMediaRecorder(recorder)
+      setRecording(true)
+    } catch (error) {
+      alert('Failed to start recording: ' + error.message)
+      console.error('Recording error:', error)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorder && recording) {
+      mediaRecorder.stop()
+      setRecording(false)
+      setMediaRecorder(null)
+    }
+  }
+
   const submitArgument = async () => {
     if (!debateId || !argument.trim()) {
       alert('Please enter your argument')
@@ -153,24 +201,7 @@ function App() {
 
     setSubmitting(true)
     try {
-      let finalContent = argument.trim()
-
-      // If audio file exists, transcribe it
-      if (audioFile && !finalContent) {
-        const transcribed = await transcribeAudio(audioFile)
-        if (!transcribed) {
-          setSubmitting(false)
-          return
-        }
-        finalContent = transcribed
-        setArgument(transcribed)
-      }
-
-      if (!finalContent) {
-        alert('Please provide text or an audio file')
-        setSubmitting(false)
-        return
-      }
+      const finalContent = argument.trim()
 
       const response = await fetch(`${API_BASE}/v1/debates/${debateId}/turns`, {
         method: 'POST',
@@ -261,20 +292,89 @@ function App() {
   }
 
   const resetDebate = () => {
+    // Stop recording if active
+    if (recording && mediaRecorder) {
+      stopRecording()
+    }
+    
     setDebateId(null)
     setDebate(null)
     setMessages([])
     setSetupComplete(false)
+    setShowLanding(false)
     setArgument('')
     setAudioFile(null)
     setScore(null)
     setScoreError(null)
+    setRecording(false)
+    setTranscribing(false)
+    setMediaRecorder(null)
+  }
+
+  const getScoreGrade = (score) => {
+    if (score >= 90) return 'Excellent'
+    if (score >= 80) return 'Great'
+    if (score >= 70) return 'Good'
+    if (score >= 60) return 'Fair'
+    return 'Needs Improvement'
+  }
+
+  // Landing page
+  if (showLanding) {
+    return (
+      <div className="app landing-mode">
+        <div className="landing-container">
+          <div className="landing-content">
+            <div className="landing-hero">
+              <h1 className="landing-title">
+                <span className="title-main">DebateLab</span>
+                <span className="title-subtitle">AI-Powered Debate Practice</span>
+              </h1>
+              <p className="landing-description">
+                Hone your debating skills with an intelligent AI opponent powered by a proprietary model 
+                trained on thousands of hours of debates and speeches from the world's best. 
+                Practice structured arguments, receive detailed feedback, and improve your 
+                persuasive abilities in a safe, interactive environment.
+              </p>
+              <button 
+                className="cta-button"
+                onClick={() => setShowLanding(false)}
+              >
+                Try it out
+                <span className="cta-arrow">→</span>
+              </button>
+            </div>
+
+            <div className="landing-features">
+              <div className="feature-card">
+                <div className="feature-icon">🤖</div>
+                <h3>AI Opponent</h3>
+                <p>Debate against an advanced AI powered by a proprietary model trained on thousands of hours of debates and speeches from the world's best debaters.</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">🎓</div>
+                <h3>Yale Debate Association</h3>
+                <p>Developed by international debaters from the Yale Debate Association</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">📊</div>
+                <h3>Detailed Scoring</h3>
+                <p>Get comprehensive feedback on clarity, structure, engagement, and strategic balance after each debate.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Setup screen
   if (!setupComplete) {
     return (
       <div className="app setup-mode">
+        <button className="return-to-landing" onClick={() => setShowLanding(true)} title="Return to home">
+          ← Home
+        </button>
         <div className="setup-container">
           <div className="setup-card">
             <h1>DebateLab</h1>
@@ -339,6 +439,9 @@ function App() {
   // Debate screen
   return (
     <div className="app debate-mode">
+      <button className="return-to-landing" onClick={() => { setShowLanding(true); resetDebate(); }} title="Return to home">
+        ← Home
+      </button>
       <header className="debate-header">
         <div className="header-content">
           <div>
@@ -421,18 +524,14 @@ function App() {
                 disabled={submitting}
               />
               <div className="input-actions">
-                <label className="file-upload-btn">
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={(e) => setAudioFile(e.target.files[0] || null)}
-                    style={{ display: 'none' }}
-                  />
-                  🎤 Audio
-                </label>
-                {audioFile && (
-                  <span className="file-name">{audioFile.name}</span>
-                )}
+                <button
+                  className={`speech-btn ${recording ? 'recording' : ''}`}
+                  onClick={recording ? stopRecording : startRecording}
+                  disabled={transcribing || submitting}
+                  title={recording ? 'Stop recording' : 'Start voice recording'}
+                >
+                  {transcribing ? '⏳ Transcribing...' : recording ? '🔴 Stop' : '🎤 Voice'}
+                </button>
                 <button
                   className="btn-primary"
                   onClick={submitArgument}
@@ -451,8 +550,21 @@ function App() {
             <p>Debate completed! Review your score or start a new debate to continue practicing.</p>
             {score ? (
               <div className="score-card">
-                <h3>Debate Score</h3>
-                <p className="overall-score">{score.overall.toFixed(1)} / 100</p>
+                <h3>Your Debate Performance</h3>
+                <div 
+                  className="score-display"
+                  data-grade={getScoreGrade(score.overall).toLowerCase().replace(/\s+/g, '-')}
+                >
+                  <div className="score-number">{Math.round(score.overall)}</div>
+                  <div className="score-label">out of 100</div>
+                  <div className="score-bar-container">
+                    <div 
+                      className="score-bar-fill" 
+                      style={{ width: `${score.overall}%` }}
+                    ></div>
+                  </div>
+                  <div className="score-grade">{getScoreGrade(score.overall)}</div>
+                </div>
                 <div className="score-metrics">
                   <div>
                     <span>Clarity & Delivery</span>

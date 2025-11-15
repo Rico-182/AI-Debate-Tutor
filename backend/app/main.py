@@ -18,9 +18,12 @@ Status = Literal["active", "completed"]
 
 app = FastAPI(title="Debate MVP")
 
+# CORS configuration - allow specific origins in production
+CORS_ORIGINS_ENV = os.getenv("CORS_ORIGINS", "*")
+CORS_ORIGINS = ["*"] if CORS_ORIGINS_ENV == "*" else [origin.strip() for origin in CORS_ORIGINS_ENV.split(",")]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # dev only
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
