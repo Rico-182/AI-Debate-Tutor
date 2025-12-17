@@ -1,0 +1,49 @@
+Motion: This house would nationalize all pharmaceutical companies
+Side: Government/Proposition
+Style: WSDC
+
+Madame Chair, big pharma takes advantage of the desperation of the sick and dying. It misinforms people, neglects them, and charges extortionate prices for the medicines they need to stay alive. On Proposition, we say it is time to end that tyranny.
+
+In this speech, I will first model what our world looks like. Then I will explain, first, why we get far better access to life-saving treatments; second, why we get more drugs developed that private companies would never touch; and third, why we reduce dangerous misinformation and manipulation from pharmaceutical companies.
+
+First, some setup. By “nationalize”, we mean that the state buys back pharmaceutical companies and compensates existing shareholders. After that, the federal government owns and runs these companies. Second, these national companies will be staffed by the best scientists, doctors, and managers we can hire. In the same way that national space agencies like NASA attract many of a country’s brightest scientists, a well-funded national pharma system will hire leading talent from the old industry and attract new researchers who actually want to work on public health rather than profit. Third, we will publish what the government is researching and issue regular public reports on, for example, how funds are being allocated and what stage different drugs are at. Our model is not a black box; it is transparent and accountable.
+
+My first argument is about accessibility of drugs.
+
+The starting characterization is that private pharma is a natural oligopoly: a small number of huge firms dominate. Structurally, this happens because you need massive fixed investment to even enter the game: specialized equipment, labs, and extremely highly trained staff. R&D is also speculative and risky: most projects fail, which means many smaller firms are weeded out long before they can establish a foothold or turn a profit.
+
+That structure creates three big problems.
+
+First, there is often very little real competition. Even when several firms exist in the same broad industry, they usually specialize in different fields. There is also a huge first-mover advantage: once one company brings a drug to market and establishes relationships with regulators, doctors, and insurers, everyone flocks to that product. It becomes much harder for later firms to break in. That is why, in practice, you see near-monopolies: insulin in the US dominated by a few firms; epinephrine by EpiPen; single companies effectively controlling life-saving treatments.
+
+The government might also be a monopoly supplier, but it can share technology and research across different units. If one institute develops expertise in stem cells for a rare disease, that basic science can be reused for cancer. If we invest in mRNA platforms for Covid, that technology can be repurposed for other vaccines. In the private world, those projects are often siloed across different companies, and intellectual property prevents sharing. In our world, the same discoveries can be leveraged across the whole system, making drug development more efficient and cheaper.
+
+Second, opposition cannot fix prices without breaking their own system. Private companies need strong IP protections and patent monopolies precisely because they must recoup their investment and satisfy shareholders. That is why you cannot simply slap on aggressive price caps and hope things carry on as usual: firms will just stop producing or never invest in the first place. Patents plus lack of competition mean companies can charge whatever they like. So you get situations where insulin in the US costs thousands of dollars a month, while in countries with heavier public control it is sold close to production cost. Same drug, same science, radically different price, purely because of how private power is structured.
+
+Governments, by contrast, are ultimately accountable to voters. If people are forced to choose between rent and chemotherapy, or if children die because parents cannot afford medication, there is enormous political backlash. Voters see the government as tyrannical and incompetent. Big pharma might also be hated, but it does not care; its primary obligation is to profit, not to avoid public anger. Governments, especially in democracies, have to respond to that anger.
+
+Third, pharmaceutical goods are highly inelastic. If you have cancer, you cannot “walk away” from a bad deal; you will pay whatever you can for the chance to live. That gives private firms a built-in opportunity to price gouge: raise prices dramatically, knowing desperate patients will still buy if they possibly can. For a company, failing to recoup R&D costs is an existential threat. For the state, it is not: the government has other sources of funding like tax revenue and can absorb losses in particular drug lines in order to keep prices affordable.
+
+The impact of this argument is simple and huge: it is not enough that drugs exist in theory. People must be able to access them without going bankrupt, without skipping rent, without choosing between medicine and their children’s education. Only a nationalized system can guarantee that access at scale.
+
+Motion: This house would nationalize all pharmaceutical companies
+Side: Government/Proposition
+Style: WSDC
+
+My second argument is about why we get more “niche” and neglected drugs under nationalization.
+
+Private corporations have very little incentive to invest in treatments that will not be highly profitable. Even if the social benefit is enormous, they will avoid projects with low expected financial return: for example, drugs for terminal illnesses where there are no long-term customers, or cures for diseases that primarily affect very poor populations, including many occupational and tropical diseases. With only a tiny market and a high chance of failure, no rational profit-seeking firm spends ten billion dollars on that kind of R&D.
+
+On the other hand, governments face a different set of incentives. First, terminal patients, their families, and their communities all vote. Politicians gain enormous credit for being the ones who funded the breakthrough that saved those people. They care about emotional impact and moral legitimacy in a way that balance sheets do not. Second, for poor populations, their political power exceeds their purchasing power. A slum of a hundred thousand people cannot move markets, but they can swing elections if they are ignored for long enough. That translates into pressure on governments to research and provide treatments even when those people could never have afforded to signal demand to a private firm.
+
+Even when private firms do develop niche or innovative drugs, they often charge astronomical prices — hundreds of thousands of dollars per course — to justify the R&D cost over a tiny customer base. That makes the drug effectively inaccessible to most people. A national system can pool revenue from widely used drugs and basic medicines to cross-subsidize high-cost, low-volume treatments. In other words, the profits from a common blood-pressure medicine can help pay for a rare cancer drug. This is precisely what justice demands: the fact that your disease is rare or concentrated among poorer people should not mean you are left to die.
+
+My third argument is about misinformation and distortion.
+
+Private companies have direct financial incentives to hide or downplay safety concerns about their products. When a drug has dangerous side effects, their first instinct is often to litigate, lobby, and spin rather than to tell the full truth. They can shield information behind claims of trade secrets and intellectual property. By contrast, governments are subject to a far higher expectation of transparency. Investigative journalists and opposition parties will hammer them if they are caught hiding data, and as we said in the model, our system includes regular public reporting as a baseline.
+
+Second, firms have incentives to manage symptoms rather than cure disease. A permanent cure is a one-off sale. A drug that you must take every week for life is a recurring revenue stream. That is why we see huge investment in maintenance drugs and far less in one-time curative interventions. The state’s incentives are flipped: it loses money when citizens are constantly sick and consuming healthcare resources. It saves money when people are cured and go back to living normal, productive lives. So the state is more likely to invest in cures rather than endless management.
+
+Third, private firms have strong incentives to overprescribe and to expand their market through aggressive marketing to doctors and patients. The opioid crisis is the clearest example: companies like Purdue Pharma pushed addictive painkillers through misleading claims and lavish kickbacks to doctors, triggering an epidemic that cost hundreds of thousands of lives and devastated communities. For the state, those outcomes are a net loss: lost productivity, higher policing and healthcare costs, and social breakdown. They have every reason to restrict overprescription rather than fuel it.
+
+Big pharma’s current power over our health is the result of a system that treats life-saving medicines as luxury consumer goods and patients as profit centers. Nationalization is not a silver bullet, but it is the only credible way to realign incentives around public health rather than shareholder value. For all these reasons, I am very proud to propose.

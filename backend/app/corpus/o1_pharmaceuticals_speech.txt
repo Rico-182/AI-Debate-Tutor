@@ -1,0 +1,76 @@
+Motion: This House would nationalize all pharmaceutical companies
+Side: Opposition
+Style: WSDC
+Speaker: First Opposition
+
+The proposition has given you a long list of problems with the current private pharmaceutical market. What they have not done is prove why nationalization is necessary or uniquely solves those issues. Our stance on Opposition is simple: we do not nationalize research, development, or distribution. Instead, we use the same political and financial capital they want to burn on nationalization to regulate, subsidize, and insure in ways that keep drugs affordable and innovation alive.
+
+Governments already have a structural incentive to keep healthcare accessible, because healthcare is a core voting issue. Even by First Proposition’s own concession, voters support stronger regulation of big pharma. So rather than seizing entire industries, we would do three things.
+
+First, we regulate against monopolistic and abusive practices: price gouging, collusion, and misleading information about addictive drugs like opioids. Proposition claims this is impossible because “companies won’t be profitable.” That contradicts their own premise that these firms are currently making excess, super-normal profits. If firms are making far more than they need to survive, then you can constrain prices and practices while still leaving them profitable.
+
+Second, we subsidize firms to produce unprofitable but socially valuable drugs: treatments for rare diseases, conditions that primarily affect the poor, and vaccines where profit signals are weak. This directly answers their claim that only nationalization can generate niche drugs. On our side, we simply pay companies to do the work we want done.
+
+Third, if drug prices remain high despite regulation and targeted subsidies, we use the broader welfare toolkit to keep healthcare affordable: means-tested support for patients, universal health insurance, or direct reimbursements. The comparative they keep pushing—of “extortion and misinformation”—is not the model in countries where healthcare is cheapest and most accessible, like Norway or Sweden. Those systems are built on regulation and public insurance, not broad nationalization of pharma. Proposition must show why nationalization is the only viable mechanism to reach those outcomes. They haven’t.
+
+We have three arguments:
+	1.	Proposition suffocates innovation.
+	2.	Proposition aggravates global inequality.
+	3.	Proposition sets a dangerous precedent for other life-saving industries.
+Before that, some direct responses.
+
+They say their core value is accessible drugs. I’ve just outlined multiple plausible tools on Opposition to achieve that without heavy-handed nationalization. Even if you were skeptical, their internal logic still doesn’t hold.
+
+They claim there are high barriers to entry in pharma, so only nationalization can break oligopolies. High barriers exist, but they are not insurmountable. Companies can cross-subsidize their entry into pharma from other profitable divisions. GlaxoSmithKline (GSK), for example, did not begin life as a pure pharma giant—it expanded into that field using profits from other lines of business. High barriers slow entry; they don’t make it impossible.
+
+They say “brand name” makes competition unrealistic. That is not credible when the product literally affects your health and lifespan. Patients and doctors care about safety, efficacy, and regulation; they do not blindly buy a visibly inferior drug just because of a brand logo. If a competitor can demonstrate that its product is demonstrably better or cheaper for the same outcome, brand value alone will not save a bad incumbent in a market this sensitive.
+
+They claim technology sharing is uniquely enabled by governments. Not true. Many large pharma companies already operate across multiple therapeutic areas precisely because they can leverage spillovers in knowledge and technology. The incentive to reuse a platform—like mRNA or monoclonal antibodies—across different indications is profit, and that incentive is already present in the private sector. You don’t need nationalization to make cross-application of technology happen; it’s a core business model.
+
+On incentives, they say governments will always respond to public backlash if treatment is subpar. That is naive. Governments can and do deflect blame by invoking exactly the rhetoric we hear from Proposition: “Private markets are even worse; this is the only realistic option.” The UK’s NHS, for instance, can endure months-long waiting lists for crucial surgeries by telling voters that any move towards private solutions will be catastrophic. The mere existence of a public monopoly allows governments to dodge accountability by pointing to the specter of “evil corporations.” So their incentive story cuts both ways.
+
+On diversity of drugs, they assert governments will take on huge risks for niche conditions as if that is obviously true. We pointed out in POI that incumbents take the risk but often do not receive the credit: if your government funds high-risk R&D and the breakthrough happens 10 years later under a different administration, the votes and praise go to your successors. Politicians are rational; they avoid high-risk, long-horizon bets whose payoff they may never be around to claim. That makes them less likely, not more, to pursue exactly the types of projects Proposition romanticizes.
+
+On misinformation and harmful drugs, they ignore the role of regulators like the FDA. Any drug—public or private—must pass multiple stages of safety trials run or overseen by the state. That already exists in the status quo. The idea that nationalization is necessary to prevent harmful drugs from reaching the market is false. On dependency, they say companies can safely rely on captive consumers. But companies cannot guarantee individuals will return to them rather than switch to a competitor or a generic. That uncertainty limits how far they can push dependency as a business strategy.
+
+Finally, the opioid crisis is not proof that nationalization is the only fix. Most countries avoided or managed opioids without nationalizing pharma. That suggests that targeted regulation, enforcement, and public health policy are sufficient to prevent similar disasters.
+
+Motion: This House would nationalize all pharmaceutical companies
+Side: Opposition
+Style: WSDC
+Speaker: First Opposition
+
+My first substantive argument: innovation is better protected and developed on our side.
+
+The core premise: government-run firms have bad incentives in pharmaceutical production.
+
+First, governments are short-termist. Everyone in this debate agrees that pharma R&D is high risk and high cost, often taking years or decades to pay off. In a democracy, the electoral cycle is 4–5 years. If you are a government investing in a risky, long-term drug project, you know that the political benefits of success will almost certainly go to your successor, not you. Even if your party stays, the face and cabinet may change. On the comparative, companies remain the same corporate entity across election cycles. They can invest in long-term projects and capture the payoff when the drug finally works because they do not lose office every few years.
+
+Second, on safety. Proposition claims that governments will be safer. In reality, governments have a greater incentive to fast-track drugs and cut corners to get short-term political wins: “We approved the breakthrough!” But many safety issues only emerge years down the line, long after a particular government is gone. The politicians who rushed approval do not face the blowback when adverse effects surface. By contrast, corporate reputations persist over time. GSK still carries reputational damage from thalidomide, a drug from the 1960s that caused birth defects in pregnant women. That long shadow creates a strong, sustained incentive for companies to avoid catastrophic safety failures. Their brand and long-term profits depend on it.
+
+At this point, Proposition raises a POI: they mention a private Alzheimer’s drug that was fast-tracked by the FDA under corporate lobbying despite limited effectiveness, and they ask why companies should operate without scrutiny. Our answer is that the structural incentives against being caught in a scandal are far stronger for companies whose entire business is medicine than for politicians who will be gone in a cycle or two. When a firm is caught gaming the system, it faces lawsuits, compensation, and brand damage that outlast any particular CEO. Governments, on the other hand, can shift blame, change ministers, and survive.
+
+Third, Proposition kills upstream innovation in medical technology. Many technologies that eventually become medical tools start off in non-medical fields—mRNA platforms in agricultural fermentation, imaging tech in industrial uses, etc. Translating them into medical applications requires specific research investments. Under Proposition’s model, the moment a private actor starts exploring medical applications, the fruits of that exploration are exposed to nationalization: their patents and know-how can be seized as “pharmaceutical.” Knowing this, holders of these intermediate technologies have strong reasons either to hide them or to avoid developing medical uses at all. Why would you spend money on translating your platform into medicine if the government can suddenly claim it?
+
+On our side, those actors can keep their patents and licensing income, so they have an incentive to push into medical domains. If the state wants cheaper access or particular directions, it can subsidize or co-fund specific projects, not confiscate entire technology stacks. That preserves the incentive to innovate while still giving governments tools to shape outcomes.
+
+For all these reasons, nationalization dulls the cutting edge of medical technology. Our approach—regulate, subsidize, insure—preserves both safety and innovation.
+
+My second argument: Proposition worsens global inequality.
+
+Under their world, every country needs to develop and produce its own pharmaceutical products because once you nationalize, you effectively make international trade in pharma politically toxic. Yet most countries are not the United States, Germany, or Japan. They lack capital, infrastructure, and the top-tier research ecosystems needed to develop cutting-edge drugs from scratch. There was almost no analysis from First Proposition on how low- and middle-income countries are supposed to catch up.
+
+On their side, governments in rich countries have strong incentives to hoard medical advances. Selling crucial drugs abroad becomes a political liability: if, in a future crisis, your voters learn that you exported valuable medicines instead of stockpiling them, the backlash is severe. So those governments keep the best products at home. Exporting life-saving drugs is rarely a vote-winner when domestic voters fear shortages. The incentive is to keep everything “in case we need it,” especially once pharma is framed as a strategic national asset.
+
+The result: developing countries are cut off. With no domestic private actors and no reliable access to imports from nationalized systems in the rich world, they end up with almost no medical technology at all. That is far worse than an imperfect private market.
+
+On our side, at least there is a global private market. Even if prices are high, developing countries can still buy drugs, negotiate prices, or join pooled purchasing agreements. They can attract generic manufacturers, license patents, and use competition between suppliers to get better deals. The access may be partial and expensive, but it exists. On Proposition’s side, access for many countries collapses to zero.
+
+Nationalizing pharma worldwide, as they effectively imply, entrenches the gap between states that already have advanced pharma ecosystems and those that do not. It freezes the international division of scientific labor in place and makes it harder, not easier, for poorer regions to catch up.
+
+For all of these reasons—because innovation suffers, because global inequality deepens, and because we already have better tools to fix the problems they describe—we will not dull the cutting edge of medical technology. We are proud to oppose.
+
+Motion: This House would nationalize all pharmaceutical companies
+Side: Opposition
+Style: WSDC
+Speaker: First Opposition
