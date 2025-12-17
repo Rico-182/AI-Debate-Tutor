@@ -1,4 +1,6 @@
 # app/main.py
+# uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
 import os
 from datetime import datetime
 from typing import Literal, Dict, List, Optional
@@ -10,6 +12,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi import UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+# Import RAG functionality
+from app.response import SimpleRAG, generate_debate_with_coach_loop, generate_rebuttal_speech
 
 # ---------- Types ----------
 load_dotenv()
@@ -25,6 +30,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------- RAG System ----------
+# Global RAG instance - will be initialized on startup
+rag_system: Optional[SimpleRAG] = None
+
+@app.on_event("startup")
+def startup_event():
+    """Initialize RAG system with corpus on app startup"""
+    global rag_system
+    corpus_dir = os.getenv("SPEECH_CORPUS_DIR", "./app/corpus")
+
+    print(f"[RAG] Initializing RAG system with corpus from: {corpus_dir}")
+    rag_system = SimpleRAG()
+
+    if os.path.exists(corpus_dir):
+        rag_system.add_corpus_folder(corpus_dir, pattern=r".*\.txt$")
+        print(f"[RAG] Indexed {len(rag_system.docs)} documents")
+    else:
+        print(f"[RAG] Warning: Corpus directory not found: {corpus_dir}")
+        print(f"[RAG] RAG system initialized but no documents loaded")
 
 
 # ---------- In-memory "DB" ----------
@@ -115,6 +140,39 @@ class ScoreBreakdown(BaseModel):
 class ScoreOut(ScoreBreakdown):
     debate_id: UUID
 
+# ---------- RAG Schemas ----------
+class RAGSpeechRequest(BaseModel):
+    motion: str = Field(min_length=1)
+    side: Literal["Government", "Opposition"] = "Government"
+    format: str = "WSDC"
+    use_rag: bool = True
+    top_k: int = Field(default=6, ge=1, le=20)
+    min_score: float = Field(default=0.1, ge=0.0, le=1.0)
+    model: str = "gpt-4o-mini"
+    temp_low: float = Field(default=0.3, ge=0.0, le=2.0)
+    temp_high: float = Field(default=0.8, ge=0.0, le=2.0)
+
+class RAGRebuttalRequest(BaseModel):
+    motion: str = Field(min_length=1)
+    opponent_speech: str = Field(min_length=1)
+    side: Literal["Government", "Opposition"] = "Opposition"
+    format: str = "WSDC"
+    use_rag: bool = True
+    top_k: int = Field(default=6, ge=1, le=20)
+    min_score: float = Field(default=0.1, ge=0.0, le=1.0)
+    model: str = "gpt-4o-mini"
+    temp_low: float = Field(default=0.3, ge=0.0, le=2.0)
+    temp_high: float = Field(default=0.8, ge=0.0, le=2.0)
+
+class RAGSpeechResponse(BaseModel):
+    speech: str
+    context_count: int
+    avg_score: Optional[float] = None
+
+class CorpusStatsResponse(BaseModel):
+    total_documents: int
+    corpus_available: bool
+
 # ---------- Helpers ----------
 def second_speaker_for_round(starter: Speaker) -> Speaker:
     return "assistant" if starter == "user" else "user"
@@ -157,47 +215,111 @@ if OPENAI_API_KEY:
 
 def generate_ai_turn_text(debate: Debate, messages: List[Message]) -> str:
     """
-    Produce assistant text. If OPENAI_API_KEY is set, call GPT-4o-mini.
-    Otherwise return a simple stub so the endpoint still works for dev.
+    Produce assistant text using RAG-powered generation when available.
+    Falls back to basic GPT-4o-mini if RAG is not initialized.
     """
-    # Build concise chat context
-    topic_context = f"Debate topic: {debate.title}" if debate.title else "Debate topic: General debate"
-    sys = (
-        "You are an APDA-style debater. Be clear, structured, and concise. "
-        "Signpost arguments. 1–2 short paragraphs for turns. "
-        f"{topic_context}. Engage with the arguments presented and provide thoughtful counterarguments."
-    )
-    print(topic_context)
-    sys = (f'''
-    You are DebaterGPT, a skilled competitive debater trained in APDA, Public Forum, and WSDC styles.
+    motion = debate.title if debate.title else "General debate topic"
 
-    When given a motion, argue as if you were in a live debate round, using clear signposting, logical flow, and rhetorical polish.
+    # If we have RAG and this is a rebuttal (not the first turn)
+    if rag_system and len(messages) > 0:
+        # Determine side - assistant is Opposition if starter is user, Government if starter is assistant
+        side = "Opposition" if debate.starter == "user" else "Government"
 
-    If the prompt says “You: For”, argue in favor of the motion.
+        # Get the last opponent message to rebut
+        opponent_messages = [m for m in messages if m.speaker != "assistant"]
+        if opponent_messages:
+            last_opponent = opponent_messages[-1]
+            try:
+                result = generate_rebuttal_speech(
+                    rag=rag_system,
+                    motion=motion,
+                    opponent_speech=last_opponent.content,
+                    side=side,
+                    format="WSDC",
+                    use_rag=True,
+                    top_k=6,
+                    min_score=0.1,
+                    model="gpt-4o-mini",
+                    temp_low=0.3,
+                    temp_high=0.8
+                )
+                return result["rebuttal_speech"]
+            except Exception as e:
+                print(f"[RAG] Rebuttal generation failed: {e}, falling back to basic generation")
 
-    If it says “You: Against”, argue against the motion for the user to rebut.
+    # If this is the first turn and we have RAG
+    if rag_system and len(messages) == 0:
+        side = "Government" if debate.starter == "assistant" else "Opposition"
+        try:
+            result = generate_debate_with_coach_loop(
+                rag=rag_system,
+                motion=motion,
+                side=side,
+                format="WSDC",
+                use_rag=True,
+                top_k=6,
+                min_score=0.1,
+                model="gpt-4o-mini",
+                temperature_gen=0.5,
+                temperature_rev=0.2,
+                temp_low=0.3,
+                temp_high=0.8
+            )
+            return result["initial_speech"]
+        except Exception as e:
+            print(f"[RAG] Speech generation failed: {e}, falling back to basic generation")
 
-    Debate Style Rules:
-
-    Start with a brief roadmap (“First, I’ll define terms, then present two contentions…”).
-
-    Use contentions, warrants, and impacts in a clear structure.
-
-    Weigh arguments explicitly (“We outweigh on magnitude and probability…”).
-
-    Maintain a confident, persuasive tone fit for tournament debate.
-
-    Always respond in the form of a debate speech, not an essay or explanation.
-
-    The given topic is {topic_context}.
-    ''')
+    # Fallback: use similar style to fine-tuned prompts in response.py
+    topic_context = f"Debate topic: {motion}"
+    sys = """You are a world-class competitive debater. Your goal is to WIN through sharp, incisive argumentation—not through aggression. Be strategic, precise, and respectful. Fill gaps with compelling real-world examples that any educated voter would recognize—think NYT front page, not academic journals. Use concrete mechanisms and numbers. Make clear, fair comparisons that demonstrate why your case is stronger. Sound like a human champion debater who wins through superior logic and analysis, not an essay or a robot.
+If the
+When delivering your speech:
+- SIGNPOST HEAVILY: Label everything clearly
+- Provide 2-3 well-developed contentions/arguments
+- Each argument needs: PREMISE → 2-3 WELL-DEVELOPED MECHANISMS → IMPACT
+- Develop EACH mechanism with 2-3 sentences (explain the causal chain, then elaborate)
+- Weigh arguments explicitly on magnitude, probability, timeframe
+- Zero filler, no pleasantries
+- Sound human, not robotic - vary sentence length
+- Use concrete examples voters recognize (Amazon, climate disasters, iPhone)
+- NEVER cite sources - use examples as common knowledge
+- Make it sound like you're SPEAKING, not reading an essay
+- There is no point in saying stuff that both sides would agree to : for example when debating about aid, both teams can agree that "aid is a powerful tool that can either stabilize or destabilize regions". THis is useless.
+"""
     convo = []
     for m in messages:
         role = "user" if m.speaker == "user" else "assistant"
         tag = f"[Round {m.round_no} · {m.speaker.upper()}]"
         convo.append({"role": role, "content": f"{tag} {m.content}"})
 
-    prompt_now = f"(Current round: {debate.current_round} of {debate.num_rounds}. You speak as {debate.next_speaker}. Provide a thoughtful response.)"
+    # Determine if this is first speech or rebuttal
+    opponent_messages = [m for m in messages if m.speaker != debate.next_speaker]
+    if opponent_messages:
+        # Rebuttal situation
+        prompt_now = f"""Motion: {topic_context}
+Current round: {debate.current_round} of {debate.num_rounds}
+
+Deliver a rebuttal speech that:
+1. Tears down the opponent's key arguments (address their strongest points first).
+- When rebutting, think about NEGATING first. If they claim something, explain a proper reason why that something is NOT true
+- If that's hard, mitigate it. If they claim sometthing, explain why it's not as big of an issue as they claimed. 
+- If that's also too hard, last resort: concede to it, but explain why your argument is still more important. 
+2. Presents 1 new constructive arguments, explicitly label this as an "extension" or "spike"
+3. Does comparative weighing
+
+Be sharp, precise, and demonstrate why your case is stronger."""
+    else:
+        # Opening speech
+        prompt_now = f"""Motion: {topic_context}
+Current round: {debate.current_round} of {debate.num_rounds}
+
+Deliver an opening speech following the structure:
+1. Opening hook (2-3 sentences with real-world example)
+2. Framing & burdens
+3. 2-3 contentions (each with premise, mechanisms, weighing)
+4. Conclusion
+
+Make your case compelling and well-structured."""
 
     if client:
         try:
@@ -206,7 +328,7 @@ def generate_ai_turn_text(debate: Debate, messages: List[Message]) -> str:
                 messages=[{"role": "system", "content": sys}] + convo + [
                     {"role": "user", "content": prompt_now}
                 ],
-                temperature=0.4,
+                temperature=0.7,  # Higher temp since no RAG context (matches response.py adaptive logic)
             )
             return resp.choices[0].message.content.strip()
         except Exception:
