@@ -377,9 +377,11 @@ def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakd
     
     system_prompt = (
         "You are DebateJudgeGPT, an expert debate adjudicator across APDA, Public Forum, and WSDC formats.\n"
-        "You will be given the full transcript of a debate between a human debater (`user`) and an AI sparring partner (`assistant`).\n"
-        "Your task is to evaluate ONLY the human debater's performance.\n\n"
-        f"Context: The user is {'FOR' if user_is_for else 'AGAINST'} the motion. The debate has {num_rounds} round(s).\n\n"
+        "You will be given the full transcript of a debate between a human debater and an AI sparring partner.\n"
+        "IMPORTANT: Messages labeled with '[Round X · USER]' are from the HUMAN DEBATER. Messages labeled with '[Round X · ASSISTANT]' are from the AI.\n"
+        "Your task is to evaluate ONLY the HUMAN DEBATER's performance (messages labeled 'USER'). Do NOT evaluate the AI's performance.\n"
+        "Only quote and reference statements made by USER, not ASSISTANT.\n\n"
+        f"Context: The human debater (USER) is {'FOR' if user_is_for else 'AGAINST'} the motion. The debate has {num_rounds} round(s).\n\n"
         "Score the human on these metrics (0-10 each, integers only):\n"
         "1. Content & Structure – arguments are understandable and well-explained; logical links are explicit; easy to follow; jargon is handled; clear signposting/roadmap.\n"
         "2. Engagement – direct refutation, comparison, impact weighing, turns/defense. (See engagement applicability rule below for when this is scorable.)\n"
@@ -410,18 +412,20 @@ def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakd
         "(Optional sentence 5-6): Strategy collapse advice tied to this specific speech.\n"
 
         "CRITICAL: You MUST return a JSON object with EXACTLY these 8 keys. Missing any key will cause the scoring to fail.\n\n"
-        "Required JSON structure:\n"
+        "MANDATORY JSON structure - you MUST include ALL 8 keys:\n"
         "{\n"
-        '  "overall_score": <number 0-10>,\n'
+        '  "overall_score": <number 0-10 (integer)>,\n'
         '  "feedback": "<4-6 sentence string>",\n'
-        '  "content_structure_score": <number 0-10>,\n'
+        '  "content_structure_score": <number 0-10 (integer)>,\n'
         '  "content_structure_feedback": "<2 sentence string with specific examples>",\n'
-        '  "engagement_score": <number 0-10>,\n'
+        '  "engagement_score": <number 0-10 (integer)>,\n'
         '  "engagement_feedback": "<2 sentence string OR exact text if not scorable>",\n'
-        '  "strategy_score": <number 0-10>,\n'
+        '  "strategy_score": <number 0-10 (integer)>,\n'
         '  "strategy_feedback": "<2 sentence string with specific examples>"\n'
         "}\n\n"
-        "Evidence requirement: each *_feedback must reference at least one specific behavior from the transcript; include 1–2 short quotes (<=12 words) from the user when possible.\n"
+        "YOU MUST PROVIDE ALL 8 KEYS. Do not omit content_structure_score, engagement_score, or strategy_score.\n"
+        "Evidence requirement: each *_feedback must reference at least one specific behavior from the USER's messages in the transcript; include 1–2 short quotes (<=12 words) from USER messages when possible. Do NOT quote or reference ASSISTANT messages.\n"
+        "CRITICAL: When providing feedback, only discuss what the USER (human debater) did. Never mention or evaluate what the ASSISTANT (AI) said.\n"
         "Return ONLY the JSON object. No markdown code blocks, no explanations, no additional text."
     )
 
@@ -432,14 +436,19 @@ def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakd
             "role": "user",
             "content": (
                 "Judge this debate according to the instructions. "
-                "Be fair, constructive, and reference specific debate behaviors in your feedback."
+                "Evaluate ONLY the HUMAN DEBATER (messages labeled 'USER'). "
+                "Be fair, constructive, and reference specific behaviors from USER messages only. "
+                "Do NOT evaluate or quote ASSISTANT messages."
             ),
         },
     ]
 
+    # Use gpt-4o for scoring - better JSON schema compliance than gpt-4o-mini
+    scoring_model = os.getenv("SCORING_MODEL", "gpt-4o")
+    
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=scoring_model,
             messages=prompt,
             temperature=0.4,
             response_format={"type": "json_object"},  # Force JSON output
@@ -456,23 +465,27 @@ def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakd
 
     # Log what keys the LLM actually returned
     print(f"[DEBUG] LLM returned keys: {list(parsed.keys())}")
-    print(f"[DEBUG] engagement_score value: {parsed.get('engagement_score', 'MISSING')}")
-
-    def _get_float(key: str) -> float:
+    print(f"[DEBUG] Sample values: {str(parsed)[:500]}")  # Print first 500 chars of parsed response for debugging
+    
+    def _get_float(key: str, default: float = 0.0) -> float:
         value = parsed.get(key)
         if value is None:
             print(f"[WARNING] Key '{key}' is missing from LLM response. Available keys: {list(parsed.keys())}")
-            return 0.0
+            return default
         if isinstance(value, (int, float)):
-            return float(value)
+            result = float(value)
+            print(f"[DEBUG] {key} = {result}")
+            return result
         if isinstance(value, str):
             try:
-                return float(value)
+                result = float(value)
+                print(f"[DEBUG] {key} (from string) = {result}")
+                return result
             except ValueError:
                 print(f"[WARNING] Could not convert '{key}' value '{value}' to float")
-                return 0.0
-        print(f"[WARNING] Unexpected type for '{key}': {type(value)}")
-        return 0.0
+                return default
+        print(f"[WARNING] Unexpected type for '{key}': {type(value)}, value: {value}")
+        return default
 
     metrics = ScoreMetrics(
         content_structure=round(_get_float("content_structure_score"), 1),

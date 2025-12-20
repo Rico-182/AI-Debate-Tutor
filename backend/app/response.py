@@ -353,6 +353,8 @@ CRITICAL: You are arguing on the {side} side. If you are Government, you SUPPORT
 OPPONENT'S SPEECH TO REBUT:
 {opponent_speech}
 
+CRITICAL ACCURACY REQUIREMENT: Only rebut arguments that are explicitly stated in the opponent's speech above. Do NOT invent, assume, or hallucinate arguments they did not make. If they only made one argument, address only that one argument. If they made two arguments, address both. Count their actual arguments and address only what they actually said.
+
 {context_block}
 
 STRICT STRUCTURE - Follow this exactly:
@@ -362,10 +364,12 @@ STRICT STRUCTURE - Follow this exactly:
    - NO greetings, NO thanks
 
 2. REBUTTALS (First ~50% of speech)
-   SIGNPOST CLEARLY: "They made three key arguments. Let me address each one."
+   CRITICAL: Only address arguments the opponent ACTUALLY made. Do NOT invent or hallucinate arguments they did not present.
+   SIGNPOST CLEARLY by counting their actual arguments: "They made [X] key argument(s). Let me address [each one/it]."
+   - NEVER claim they made more arguments than they actually did
 
-   For EACH of their main arguments:
-   a) NAME their argument specifically (quote their tagline or summarize it)
+   For EACH of their main arguments (only address arguments they actually made):
+   a) NAME their argument specifically (quote their tagline or summarize it EXACTLY as they stated it)
    b) IDENTIFY the critical flaw:
       - Challenge the mechanism (their causal chain has gaps or breaks down)
       - Question the impact (overstated, other factors reduce significance)
@@ -374,8 +378,9 @@ STRICT STRUCTURE - Follow this exactly:
 
    Make strategic choices:
    - Spend more time on their strongest argument (must address it thoroughly)
-   - Efficiently address weaker arguments
+   - Efficiently address weaker arguments (if there are multiple)
    - If you can turn their argument to support your side, explain how
+   - If they only made one argument, spend significant time thoroughly rebutting it rather than inventing others
 
 3. CONSTRUCTIVE ARGUMENTS (Next ~33% of speech)
    SIGNPOST: "Now let me present our case..."
@@ -401,7 +406,8 @@ STRICT STRUCTURE - Follow this exactly:
    - Demonstrate why the judge should vote for your side
 
 MANDATORY STYLE REQUIREMENTS:
-- SIGNPOST HEAVILY: "First response...", "Second, they claim...", "Turn: this actually shows..."
+- ACCURACY FIRST: Only address arguments the opponent ACTUALLY made. Quote or summarize their arguments exactly as stated. Never invent arguments to rebut.
+- SIGNPOST HEAVILY: "First, they claim [quote their actual argument]...", "Second, they argue [quote their actual argument]..." - but only if they actually made multiple arguments
 - DEVELOP MECHANISMS FULLY: For constructive arguments, each mechanism needs 2-3 sentences. Don't just list them—explain the causal chain, then elaborate with evidence or examples.
 - Be sharp and precise - identify flaws clearly and explain why they matter
 - Use concrete examples voters recognize (NYT test) - NO source attribution
