@@ -265,7 +265,9 @@ class SimpleRAG:
 
                 return resp.choices[0].message.content.strip()
             except Exception as e:
-                return f"[LLM error: {e}]\n\nPROMPT\n-----\n{prompt}"
+                # Log internally but NEVER expose prompt or error details to user
+                print(f"[ERROR] LLM call failed: {e}")
+                return "[Error generating response. Please try again.]"
         # Deterministic stub: return a short extractive-looking answer
         return _stub_answer_from_prompt(prompt)
 
