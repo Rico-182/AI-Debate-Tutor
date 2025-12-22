@@ -32,7 +32,6 @@ function App() {
     if (!targetId) return null
     // Prevent multiple simultaneous score fetches
     if (scoring) {
-      console.log('Score fetch already in progress, skipping...')
       return null
     }
     setScoring(true)
@@ -59,7 +58,8 @@ function App() {
       throw new Error(errorText || 'Failed to fetch score')
     } catch (error) {
       console.error('Error fetching score:', error)
-      setScoreError(error.message)
+      // Never expose raw error messages to users
+      setScoreError("Unable to load score")
       return null
     } finally {
       setScoring(false)
@@ -134,7 +134,8 @@ function App() {
         setTimeout(() => generateAITurn(data.id), 500)
       }
     } catch (error) {
-      alert('Failed to start debate: ' + error.message)
+      console.error('Error starting debate:', error)
+      alert('Failed to start debate. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -152,7 +153,8 @@ function App() {
       const data = await response.json()
       return data.text
     } catch (error) {
-      alert('Transcription failed: ' + error.message)
+      console.error('Transcription error:', error)
+      alert('Unable to transcribe audio. Please try again.')
       return null
     }
   }
@@ -188,8 +190,8 @@ function App() {
       setMediaRecorder(recorder)
       setRecording(true)
     } catch (error) {
-      alert('Failed to start recording: ' + error.message)
       console.error('Recording error:', error)
+      alert('Unable to access microphone. Please check permissions.')
     }
   }
 
@@ -226,8 +228,7 @@ function App() {
       }
 
       const turnData = await response.json()
-      console.log('Turn submitted, response:', turnData)
-      
+
       // Create message object from the submission
       // Note: TurnOut doesn't include content, so we use the original argument
       const newMessage = {
@@ -254,7 +255,6 @@ function App() {
       
       // Auto-generate AI response if it's the assistant's turn
       if (turnData.status === 'active' && turnData.next_speaker === 'assistant') {
-        console.log('Triggering AI turn generation...')
         // Small delay to ensure UI updates
         setTimeout(() => {
           generateAITurn(debateId)
@@ -264,7 +264,8 @@ function App() {
         await fetchScore(debateId, true)
       }
     } catch (error) {
-      alert('Failed to submit argument: ' + error.message)
+      console.error('Error submitting argument:', error)
+      alert('Failed to submit argument. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -282,11 +283,10 @@ function App() {
         const errorText = await response.text()
         throw new Error(errorText)
       }
-      
+
       // Get the AI response data - use it directly instead of refetching
       const aiTurnData = await response.json()
-      console.log('AI turn generated:', aiTurnData)
-      
+
       // Create message object from the response
       const newMessage = {
         id: aiTurnData.message_id,
@@ -313,7 +313,8 @@ function App() {
       }
     } catch (error) {
       console.error('Error generating AI turn:', error)
-      alert('Failed to generate AI response: ' + error.message)
+      // NEVER expose error.message - could contain prompts during network failures
+      alert('AI response temporarily unavailable. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -330,7 +331,8 @@ function App() {
       await fetchDebate()
       await fetchScore(debateId, true)
     } catch (error) {
-      alert('Failed to finish debate: ' + error.message)
+      console.error('Error finishing debate:', error)
+      alert('Failed to finish debate. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -672,6 +674,21 @@ function App() {
                 <div className="score-feedback">
                   <h4>Judge Feedback</h4>
                   <p>{score.feedback || 'No overall feedback available.'}</p>
+
+                  {/* Show drill recommendation if engagement score is low */}
+                  {score.metrics?.engagement != null && score.metrics.engagement < 6 && (
+                    <div className="drill-recommendation">
+                      <p className="drill-rec-text">
+                        💡 Your engagement score could use some work. Practice with focused drills!
+                      </p>
+                      <a
+                        href={`/drill-rebuttal?motion=${encodeURIComponent(topic)}&position=${position}`}
+                        className="btn-drill"
+                      >
+                        Practice Rebuttal Skills →
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

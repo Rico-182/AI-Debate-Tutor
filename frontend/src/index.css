@@ -1224,3 +1224,254 @@ body {
     padding: 18px 20px;
   }
 }
+
+/* Drill Page Styles */
+.drill-mode {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.drill-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.drill-header {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.drill-header h1 {
+  margin: 0 0 10px 0;
+  color: #1a1a1a;
+  font-size: 2.2rem;
+}
+
+.drill-subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 10px 0;
+}
+
+.drill-info {
+  color: #888;
+  font-size: 0.95rem;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.drill-score {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.drill-score h3 {
+  margin: 0 0 15px 0;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+}
+
+.score-display-mini {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.score-number-mini {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.score-metrics-mini {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+.score-metrics-mini > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.score-metrics-mini span {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.score-metrics-mini strong {
+  font-size: 1.3rem;
+  color: #1a1a1a;
+}
+
+.drill-feedback {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  color: #444;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.drill-claim-box {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.drill-claim-box h3 {
+  margin: 0 0 15px 0;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+}
+
+.claim-content {
+  position: relative;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.claim-position-tag {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.claim-content p {
+  margin: 0;
+  color: #1a1a1a;
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
+
+.drill-input-section {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.drill-input-section h3 {
+  margin: 0 0 15px 0;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+}
+
+.drill-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.drill-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.drill-textarea::placeholder {
+  color: #999;
+}
+
+.drill-tips {
+  background: rgba(255,255,255,0.95);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.drill-tips h4 {
+  margin: 0 0 12px 0;
+  color: #1a1a1a;
+  font-size: 1rem;
+}
+
+.drill-tips ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #444;
+}
+
+.drill-tips li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.drill-tips strong {
+  color: #667eea;
+}
+
+/* Drill Recommendation in Score Card */
+.drill-recommendation {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #f0f0f0;
+  text-align: center;
+}
+
+.drill-rec-text {
+  color: #666;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.btn-drill {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-drill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+@media (max-width: 768px) {
+  .score-display-mini {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .score-metrics-mini {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .drill-header h1 {
+    font-size: 1.8rem;
+  }
+}

@@ -177,6 +177,33 @@ class CorpusStatsResponse(BaseModel):
     total_documents: int
     corpus_available: bool
 
+# ---------- Drill Schemas ----------
+class DrillStartRequest(BaseModel):
+    motion: str = Field(min_length=1)
+    user_position: Literal["for", "against"]  # The position the user took in the debate
+
+class DrillClaimResponse(BaseModel):
+    claim: str
+    claim_position: Literal["for", "against"]  # The position of the claim (opposite of user)
+
+class DrillRebuttalSubmit(BaseModel):
+    motion: str = Field(min_length=1)
+    claim: str = Field(min_length=1)
+    claim_position: Literal["for", "against"]
+    rebuttal: str = Field(min_length=1)
+
+class DrillRebuttalMetrics(BaseModel):
+    refutation_quality: float  # 0-10: How well they negate/mitigate the claim
+    evidence_examples: float   # 0-10: Quality of supporting evidence or counter-examples
+    impact_comparison: float   # 0-10: Whether they weigh their response against the claim
+
+class DrillRebuttalScore(BaseModel):
+    overall_score: float  # 0-10
+    metrics: DrillRebuttalMetrics
+    feedback: str  # Specific feedback on what they did well and what to improve
+    next_claim: str  # Next claim to practice with
+    next_claim_position: Literal["for", "against"]
+
 # ---------- Helpers ----------
 def second_speaker_for_round(starter: Speaker) -> Speaker:
     return "assistant" if starter == "user" else "user"
@@ -484,14 +511,18 @@ def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakd
             response_format={"type": "json_object"},  # Force JSON output
         )
     except Exception as exc:
-        raise HTTPException(502, f"Scoring failed: {exc}") from exc
+        # Log internally but never expose to user
+        print(f"[ERROR] Scoring API call failed: {exc}")
+        raise HTTPException(502, "Unable to score debate at this time. Please try again.")
 
     raw = resp.choices[0].message.content.strip()
 
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError:
-        raise HTTPException(502, f"Scoring response malformed: {raw}")
+        # Log internally but NEVER expose raw response to user
+        print(f"[ERROR] Scoring response malformed, length: {len(raw)}")
+        raise HTTPException(502, "Scoring service temporarily unavailable. Please try again.")
 
     # Log what keys the LLM actually returned
     print(f"[DEBUG] LLM returned keys: {list(parsed.keys())}")
@@ -687,10 +718,13 @@ async def transcribe(file: UploadFile = File(...)):
     try:
         text = transcribe_with_whisper(audio_bytes, filename=file.filename or "audio.wav")
     except RuntimeError as e:
-        raise HTTPException(500, str(e))
+        # Log internally but never expose to user
+        print(f"[ERROR] Transcription runtime error: {e}")
+        raise HTTPException(500, "Transcription service not configured.")
     except Exception as e:
-        # Surface a concise error; log details in real app
-        raise HTTPException(502, f"Transcription failed: {e}")
+        # Log internally but NEVER expose error details
+        print(f"[ERROR] Transcription failed: {e}")
+        raise HTTPException(502, "Unable to transcribe audio. Please try again.")
 
     return TranscribeOut(text=text)
 
@@ -737,6 +771,139 @@ def get_score(debate_id: UUID):
             )
 
     return _score_out_from_breakdown(debate_id, breakdown)
+
+
+# ---------- Drill System ----------
+def generate_drill_claim(motion: str, claim_position: Literal["for", "against"]) -> str:
+    """Generate a claim for the drill based on the motion and position."""
+    if not client:
+        return f"Sample claim {claim_position} the motion: {motion}"
+
+    system_prompt = (
+        "You are a debate argument generator. Your job is to generate a single, strong claim "
+        "that a debater might make in a debate. The claim should be:\n"
+        "- One clear argument (2-3 sentences max)\n"
+        "- Include a specific mechanism or reasoning\n"
+        "- Mention a concrete example or scenario\n"
+        "- Be realistic and arguable (not obviously true/false)\n\n"
+        "Do NOT include labels like 'Claim:', just output the argument directly."
+    )
+
+    position_text = "FOR" if claim_position == "for" else "AGAINST"
+    user_prompt = f"Motion: {motion}\n\nGenerate one strong argument {position_text} this motion."
+
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.8,
+            max_tokens=150,
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"[DRILL] Claim generation failed: {e}")
+        return f"Sample claim {claim_position} the motion: {motion}"
+
+
+def score_drill_rebuttal(motion: str, claim: str, claim_position: str, rebuttal: str) -> dict:
+    """Score a drill rebuttal and return metrics + feedback."""
+    if not client:
+        raise HTTPException(503, "Drill scoring requires OpenAI API key")
+
+    system_prompt = (
+        "You are a debate coach evaluating a student's rebuttal drill.\n\n"
+        "The student was given a claim and asked to rebut it. Evaluate their rebuttal on:\n"
+        "1. Refutation Quality (0-10): How well do they negate or mitigate the claim? Do they identify flaws in logic, challenge assumptions, or show why the claim doesn't hold?\n"
+        "2. Evidence/Examples (0-10): Do they use concrete counter-examples, data, or real-world scenarios to support their refutation?\n"
+        "3. Impact Comparison (0-10): Do they weigh their response against the claim? Do they explain why their point matters more or undermines the claim's significance?\n\n"
+        "Provide:\n"
+        "- overall_score: Average of the three metrics (0-10)\n"
+        "- refutation_quality_score, evidence_examples_score, impact_comparison_score (0-10 each)\n"
+        "- feedback: 2-3 sentences with ONE specific strength (with quote) and ONE concrete improvement (with example of what they could have said)\n\n"
+        "Return ONLY a JSON object with keys: overall_score, refutation_quality_score, evidence_examples_score, impact_comparison_score, feedback\n"
+        "Do not include any additional text outside the JSON."
+    )
+
+    user_prompt = (
+        f"Motion: {motion}\n\n"
+        f"Claim ({claim_position}): {claim}\n\n"
+        f"Student's Rebuttal: {rebuttal}\n\n"
+        f"Evaluate this rebuttal."
+    )
+
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
+        result = json.loads(resp.choices[0].message.content.strip())
+
+        # Extract scores with defaults
+        overall = float(result.get("overall_score", 0))
+        refutation = float(result.get("refutation_quality_score", 0))
+        evidence = float(result.get("evidence_examples_score", 0))
+        impact = float(result.get("impact_comparison_score", 0))
+        feedback = result.get("feedback", "Good attempt. Keep practicing!")
+
+        return {
+            "overall_score": round(overall, 1),
+            "refutation_quality": round(refutation, 1),
+            "evidence_examples": round(evidence, 1),
+            "impact_comparison": round(impact, 1),
+            "feedback": feedback,
+        }
+    except Exception as e:
+        # Log internally but NEVER expose error details
+        print(f"[ERROR] Drill scoring failed: {e}")
+        raise HTTPException(502, "Unable to score rebuttal. Please try again.")
+
+
+@app.post("/v1/drills/rebuttal/start", response_model=DrillClaimResponse)
+def start_rebuttal_drill(body: DrillStartRequest):
+    """Start a rebuttal drill - generates first claim for user to rebut."""
+    # Generate claim on the opposite side of the user's position
+    claim_position = "against" if body.user_position == "for" else "for"
+    claim = generate_drill_claim(body.motion, claim_position)
+
+    return DrillClaimResponse(
+        claim=claim,
+        claim_position=claim_position
+    )
+
+
+@app.post("/v1/drills/rebuttal/submit", response_model=DrillRebuttalScore)
+def submit_rebuttal_drill(body: DrillRebuttalSubmit):
+    """Submit a rebuttal and get scored + next claim."""
+    # Score the rebuttal
+    score_result = score_drill_rebuttal(
+        body.motion,
+        body.claim,
+        body.claim_position,
+        body.rebuttal
+    )
+
+    # Generate next claim (same position as before - user keeps rebutting claims from opposite side)
+    next_claim = generate_drill_claim(body.motion, body.claim_position)
+
+    return DrillRebuttalScore(
+        overall_score=score_result["overall_score"],
+        metrics=DrillRebuttalMetrics(
+            refutation_quality=score_result["refutation_quality"],
+            evidence_examples=score_result["evidence_examples"],
+            impact_comparison=score_result["impact_comparison"],
+        ),
+        feedback=score_result["feedback"],
+        next_claim=next_claim,
+        next_claim_position=body.claim_position,
+    )
 
 
 # ---------- Health ----------
