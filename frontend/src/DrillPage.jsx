@@ -3,6 +3,27 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
+// Fetch with timeout utility
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 60000) => {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+    return response
+  } catch (error) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.')
+    }
+    throw error
+  }
+}
+
 function DrillPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -23,6 +44,22 @@ function DrillPage() {
   const [attemptCount, setAttemptCount] = useState(0)
   const [timeRemaining, setTimeRemaining] = useState(null)
   const timerIntervalRef = useRef(null)
+  
+  // Offline detection
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   // Start drill - get first claim
   useEffect(() => {
@@ -68,6 +105,10 @@ function DrillPage() {
   }, [timeRemaining])
 
   const startDrill = async () => {
+    if (!isOnline) {
+      alert('You are offline. Please check your connection.')
+      return
+    }
     setLoading(true)
     try {
       const requestBody = {
@@ -78,11 +119,11 @@ function DrillPage() {
         requestBody.weakness_type = weaknessType
       }
       
-      const response = await fetch(`${API_BASE}/v1/drills/rebuttal/start`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/drills/rebuttal/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
-      })
+      }, 30000) // 30 second timeout
 
       if (!response.ok) throw new Error('Failed to start drill')
 
@@ -103,6 +144,11 @@ function DrillPage() {
       return
     }
 
+    if (!isOnline) {
+      alert('You are offline. Please check your connection and try again.')
+      return
+    }
+
     setSubmitting(true)
     try {
       const requestBody = {
@@ -115,11 +161,11 @@ function DrillPage() {
         requestBody.weakness_type = weaknessType
       }
       
-      const response = await fetch(`${API_BASE}/v1/drills/rebuttal/submit`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/drills/rebuttal/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
-      })
+      }, 60000) // 60 second timeout for scoring
 
       if (!response.ok) {
         let errorMessage = 'Failed to submit rebuttal. Please try again.'
@@ -191,6 +237,20 @@ function DrillPage() {
       </button>
 
       <div className="drill-container">
+        {!isOnline && (
+          <div style={{
+            background: 'rgba(255, 107, 107, 0.2)',
+            border: '1px solid rgba(255, 107, 107, 0.5)',
+            color: '#ff6b6b',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            marginBottom: '12px',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            ⚠️ You are offline. Please check your connection.
+          </div>
+        )}
         <div className="drill-header">
           <h1>{weaknessType ? `${weaknessType.charAt(0).toUpperCase() + weaknessType.slice(1)} Drill` : 'Rebuttal Drill'}</h1>
           <p className="drill-subtitle">Practice {weaknessType ? weaknessType : 'refuting claims'} on: <strong>{motion}</strong></p>

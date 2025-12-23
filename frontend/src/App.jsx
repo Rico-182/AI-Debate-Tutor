@@ -3,6 +3,27 @@ import { Link } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
+// Fetch with timeout utility
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 60000) => {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+    return response
+  } catch (error) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.')
+    }
+    throw error
+  }
+}
+
 const DEBATE_TOPICS = [
   'Social media does more harm than good',
   'As a college student, pursuing passions is preferable to selling out',
@@ -54,19 +75,39 @@ function App() {
   const [mediaRecorder, setMediaRecorder] = useState(null)
   const inputRef = useRef(null)
 
+  // Offline detection
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
   const fetchScore = async (targetId = debateId, compute = false) => {
     if (!targetId) return null
     // Prevent multiple simultaneous score fetches
     if (scoring) {
       return null
     }
+    if (!isOnline) {
+      setScoreError("You are offline. Please check your connection.")
+      return null
+    }
     setScoring(true)
     try {
       const method = compute ? 'POST' : 'GET'
-      const response = await fetch(`${API_BASE}/v1/debates/${targetId}/score`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/debates/${targetId}/score`, {
         method,
         headers: { 'Content-Type': 'application/json' },
-      })
+      }, 60000) // 60 second timeout for scoring
 
       if (response.ok) {
         const data = await response.json()
@@ -140,8 +181,12 @@ function App() {
 
   const fetchDebate = async (targetId = debateId) => {
     if (!targetId) return null
+    if (!isOnline) {
+      console.error('Offline: Cannot fetch debate')
+      return null
+    }
     try {
-      const response = await fetch(`${API_BASE}/v1/debates/${targetId}`)
+      const response = await fetchWithTimeout(`${API_BASE}/v1/debates/${targetId}`, {}, 30000) // 30 second timeout
       if (!response.ok) throw new Error('Failed to fetch debate')
       const data = await response.json()
       setDebate(data)
@@ -170,13 +215,17 @@ function App() {
       return
     }
 
+    if (!isOnline) {
+      alert('You are offline. Please check your connection and try again.')
+      return
+    }
     setLoading(true)
     try {
       // Determine starter based on position
       // If user is "for", user starts; if "against", assistant starts (arguing for)
       const starter = position === 'for' ? 'user' : 'assistant'
       
-      const response = await fetch(`${API_BASE}/v1/debates`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/debates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -185,7 +234,7 @@ function App() {
           title: `${topic} (User: ${position}, You take the opposite position)`,
           mode: mode,
         }),
-      })
+      }, 30000) // 30 second timeout
 
       if (!response.ok) {
         let errorMessage = 'Failed to start debate. Please try again.'
@@ -227,13 +276,17 @@ function App() {
   }
 
   const transcribeAudio = async (file) => {
+    if (!isOnline) {
+      alert('You are offline. Please check your connection.')
+      return null
+    }
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const response = await fetch(`${API_BASE}/v1/transcribe`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/transcribe`, {
         method: 'POST',
         body: formData,
-      })
+      }, 120000) // 120 second timeout for transcription (can be slow)
       if (!response.ok) throw new Error('Transcription failed')
       const data = await response.json()
       return data.text
@@ -299,18 +352,23 @@ function App() {
       return
     }
 
+    if (!isOnline) {
+      alert('You are offline. Please check your connection and try again.')
+      return
+    }
+
     setSubmitting(true)
     try {
       const finalContent = argument.trim()
 
-      const response = await fetch(`${API_BASE}/v1/debates/${debateId}/turns`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/debates/${debateId}/turns`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           speaker: 'user',
           content: finalContent,
         }),
-      })
+      }, 30000) // 30 second timeout
 
       if (!response.ok) {
         let errorMessage = 'Failed to submit argument. Please try again.'
@@ -379,12 +437,16 @@ function App() {
 
   const generateAITurn = async (targetId = debateId) => {
     if (!targetId) return
+    if (!isOnline) {
+      alert('You are offline. Please check your connection.')
+      return
+    }
 
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE}/v1/debates/${targetId}/auto-turn`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/debates/${targetId}/auto-turn`, {
         method: 'POST',
-      })
+      }, 90000) // 90 second timeout for AI generation (can be slow)
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(errorText)
@@ -428,11 +490,15 @@ function App() {
 
   const finishDebate = async () => {
     if (!debateId) return
+    if (!isOnline) {
+      alert('You are offline. Please check your connection.')
+      return
+    }
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE}/v1/debates/${debateId}/finish`, {
+      const response = await fetchWithTimeout(`${API_BASE}/v1/debates/${debateId}/finish`, {
         method: 'POST',
-      })
+      }, 30000) // 30 second timeout
       if (!response.ok) throw new Error('Failed to finish debate')
       await fetchDebate()
       await fetchScore(debateId, true)
@@ -679,6 +745,20 @@ function App() {
         ← Home
       </button>
       <header className="debate-header">
+        {!isOnline && (
+          <div style={{
+            background: 'rgba(255, 107, 107, 0.2)',
+            border: '1px solid rgba(255, 107, 107, 0.5)',
+            color: '#ff6b6b',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            marginBottom: '12px',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            ⚠️ You are offline. Please check your connection.
+          </div>
+        )}
         <div className="header-content">
           <div>
             <h2>{topic}</h2>

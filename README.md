@@ -178,6 +178,137 @@ For production deployment, consider:
 - Setting up proper CORS configuration
 - Using environment-specific configuration
 
+## Deployment
+
+This application can be deployed using Railway for the backend and Vercel for the frontend.
+
+### Prerequisites
+
+- GitHub account
+- Railway account (sign up at [railway.app](https://railway.app))
+- Vercel account (sign up at [vercel.com](https://vercel.com))
+- OpenAI API key
+
+### Backend Deployment (Railway)
+
+1. **Push your code to GitHub** (if not already done):
+   ```bash
+   git add .
+   git commit -m "Prepare for deployment"
+   git push origin main
+   ```
+
+2. **Create a new Railway project**:
+   - Go to [railway.app](https://railway.app) and sign in
+   - Click "New Project"
+   - Select "Deploy from GitHub repo"
+   - Choose your repository
+   - Railway will auto-detect the Python backend
+
+3. **Configure environment variables**:
+   - In your Railway project dashboard, go to "Variables"
+   - Add the following environment variables:
+     ```
+     OPENAI_API_KEY=your_openai_api_key_here
+     CORS_ORIGINS=https://your-frontend-url.vercel.app
+     SCORING_MODEL=gpt-4o
+     ```
+   - **Important**: Replace `your-frontend-url.vercel.app` with your actual Vercel deployment URL
+
+4. **Deploy**:
+   - Railway will automatically detect the `Procfile` and start the server
+   - The backend will be available at `https://your-project-name.up.railway.app`
+   - Note the deployment URL - you'll need it for the frontend
+
+5. **Verify deployment**:
+   - Visit `https://your-backend-url.up.railway.app/v1/health` to verify the backend is running
+   - Visit `https://your-backend-url.up.railway.app/docs` to view API documentation
+
+### Frontend Deployment (Vercel)
+
+1. **Install Vercel CLI** (optional, you can also use the web interface):
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Deploy from GitHub** (recommended):
+   - Go to [vercel.com](https://vercel.com) and sign in
+   - Click "Add New Project"
+   - Import your GitHub repository
+   - Configure the project:
+     - **Root Directory**: `frontend`
+     - **Framework Preset**: Vite
+     - **Build Command**: `npm run build`
+     - **Output Directory**: `dist`
+
+3. **Set environment variables**:
+   - In your Vercel project settings, go to "Environment Variables"
+   - Add:
+     ```
+     VITE_API_BASE_URL=https://your-backend-url.up.railway.app
+     ```
+   - Replace `your-backend-url.up.railway.app` with your Railway backend URL
+
+4. **Deploy**:
+   - Click "Deploy"
+   - Vercel will build and deploy your frontend
+   - Your app will be available at `https://your-project-name.vercel.app`
+
+5. **Update CORS in Railway**:
+   - Go back to Railway dashboard
+   - Update the `CORS_ORIGINS` variable to include your Vercel URL:
+     ```
+     CORS_ORIGINS=https://your-project-name.vercel.app
+     ```
+   - Railway will automatically redeploy with the new CORS settings
+
+### Environment Variables Reference
+
+#### Backend (Railway)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `OPENAI_API_KEY` | Yes | - | Your OpenAI API key |
+| `CORS_ORIGINS` | No | `*` | Comma-separated list of allowed origins (e.g., `https://app.vercel.app`) |
+| `SCORING_MODEL` | No | `gpt-4o` | Model to use for scoring (`gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`) |
+| `SPEECH_CORPUS_DIR` | No | `./app/corpus` | Directory for RAG corpus files |
+| `PORT` | Auto-set | - | Port number (automatically set by Railway) |
+
+#### Frontend (Vercel)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `VITE_API_BASE_URL` | Yes | `http://localhost:8000` | Backend API URL (your Railway deployment URL) |
+
+### Troubleshooting Deployment
+
+#### Backend Issues
+
+- **Port errors**: Railway automatically sets `PORT` - don't override it
+- **Build failures**: Ensure `requirements.txt` includes all dependencies
+- **CORS errors**: Verify `CORS_ORIGINS` includes your Vercel URL (no trailing slash)
+- **API key errors**: Double-check `OPENAI_API_KEY` is set correctly in Railway
+
+#### Frontend Issues
+
+- **API connection errors**: Verify `VITE_API_BASE_URL` points to your Railway backend
+- **Build failures**: Ensure all dependencies are in `package.json`
+- **CORS errors**: Check that Railway `CORS_ORIGINS` includes your Vercel URL
+
+### Example `.env` File (Backend)
+
+Create a `.env` file in the `backend` directory for local development:
+
+```bash
+# Copy backend/.env.example to backend/.env and fill in your values
+OPENAI_API_KEY=your_openai_api_key_here
+CORS_ORIGINS=http://localhost:3000
+SCORING_MODEL=gpt-4o
+SPEECH_CORPUS_DIR=./app/corpus
+```
+
+**Note**: The `.env` file is gitignored and should never be committed to version control.
+
 ## License
 
 [Add your license here]
