@@ -10,31 +10,29 @@ const DRILL_TYPES = [
 ]
 
 const SAMPLE_TOPICS = [
-  'This House, as a college student, would pursue their passions over selling out',
-  'This House believes the US dollar\'s global dominance is harmful',
-  'This House believes success is primarily determined by luck rather than effort',
-  'This House would restrict free speech to combat right-wing populism',
-  'This House opposes leftist bias in universities',
-  'This House prefers economic sanctions to military action',
-  'This House supports the development of AI in creative industries',
-  'This House believes democracy is a human right',
-  'This House prefers flawed democracies to technocratic governance',
-  'This House would nationalize all land ownership',
-  'This House believes that a nationalized pharmaceutical industry is preferable to a private one',
-  'This House supports Marxist economic principles',
-  'This House believes that government regulation stifles innovation',
-  'This House would prioritize individual liberty over collective security',
-  'This House believes that markets should determine resource allocation',
+  'Social media does more harm than good',
+  'As a college student, pursuing passions is preferable to selling out',
+  'The US dollar\'s global dominance is harmful',
+  'Success is primarily determined by luck rather than effort',
+  'Free speech should be restricted to combat right-wing populism',
+  'Universities are biased against leftist perspectives',
+  'Economic sanctions are preferable to military action',
+  'AI development in creative industries should be supported',
+  'Democracy is a human right',
+  'Flawed democracies are preferable to technocratic governance',
+  'All land ownership should be nationalized',
+  'A nationalized pharmaceutical industry is preferable to a private one',
+  'Marxist economic principles are superior',
+  'Government regulation stifles innovation',
+  'Individual liberty should be prioritized over collective security',
+  'Markets should determine resource allocation',
 ]
 
 function DrillsPage() {
   const navigate = useNavigate()
   const [selectedType, setSelectedType] = useState(null)
   const [customTopic, setCustomTopic] = useState('')
-  const [selectedTopic, setSelectedTopic] = useState(() => {
-    // Randomly select a topic on initial render
-    return SAMPLE_TOPICS[Math.floor(Math.random() * SAMPLE_TOPICS.length)]
-  })
+  const [selectedTopic, setSelectedTopic] = useState('Social media does more harm than good')
   const [position, setPosition] = useState('for')
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [timerMinutes, setTimerMinutes] = useState(3)
