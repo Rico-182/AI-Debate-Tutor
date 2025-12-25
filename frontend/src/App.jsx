@@ -586,7 +586,7 @@ function App() {
               </h1>
               <p className="landing-description">
                 Hone your debating skills with an intelligent AI opponent powered by a proprietary model 
-                trained on thousands of hours of debates and speeches from the world's best.
+                trained on hundreds of hours of debates and speeches from the world's best.
               </p>
               <div className="landing-actions">
                 <button 
@@ -613,8 +613,8 @@ function App() {
               </div>
               <div className="feature-card">
                 <div className="feature-icon">🎓</div>
-                <h3>Trained on the best of the best</h3>
-                <p>Trained by members of the <strong>Yale Debate Association</strong> and former national team members. Trained on hours of pro-level debate content.</p>
+                <h3>Trained on the best</h3>
+                <p>Trained by members of the <strong>Yale Debate Association</strong> and former national team members. Trained on hundreds of hours of pro-level debate content.</p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">⚡</div>
