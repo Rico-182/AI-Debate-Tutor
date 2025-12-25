@@ -354,23 +354,31 @@ def generate_ai_turn_text(debate: Debate, messages: List[Message]) -> str:
     
     if debate.mode == "casual":
         # Casual mode: more conversational, no RAG, less formal structure, optimized for speed
-        sys = """You are a debate partner who directly challenges arguments. Be concise—keep responses to 2 paragraphs maximum. Don't be polite or acknowledge their points—immediately refute what they said. Point out flaws in their reasoning, challenge their examples, and explain why they're wrong. Be direct and confrontational, not nice."""
+        sys = """You directly challenge their arguments. Be sharp and confrontational.
+
+RULES:
+- START WITH ROADMAP: "Here's what I'll do: first, rebut your X. Second, make our case on Y."
+- Match their depth/detail (if they wrote 2 developed points, you write 2-3)
+- Only address what they ACTUALLY said - no invented arguments
+- Show logical flaws step-by-step: "You claim X→Y, but this breaks down because..."
+- When you cite examples, clarify: "This shows X, not Y..."
+- Always weigh: "Even granting your point, our side wins because..."
+- Every sentence must matter - no filler
+- Be direct, not polite"""
     else:
         # Parliamentary mode: formal debate structure
-        sys = """You are a world-class competitive debater. Your goal is to WIN through sharp, incisive argumentation—not through aggression. Be strategic, precise, and respectful. Fill gaps with compelling real-world examples that any educated voter would recognize—think NYT front page, not academic journals. Use concrete mechanisms and numbers. Make clear, fair comparisons that demonstrate why your case is stronger. Sound like a human champion debater who wins through superior logic and analysis, not an essay or a robot.
-If the
-When delivering your speech:
-- SIGNPOST HEAVILY: Label everything clearly
-- Provide 2-3 well-developed contentions/arguments
-- Each argument needs: PREMISE → 2-3 WELL-DEVELOPED MECHANISMS → IMPACT
-- Develop EACH mechanism with 2-3 sentences (explain the causal chain, then elaborate)
-- Weigh arguments explicitly on magnitude, probability, timeframe
-- Zero filler, no pleasantries
-- Sound human, not robotic - vary sentence length
-- Use concrete examples voters recognize (Amazon, climate disasters, iPhone)
-- NEVER cite sources - use examples as common knowledge
-- Make it sound like you're SPEAKING, not reading an essay
-- There is no point in saying stuff that both sides would agree to : for example when debating about aid, both teams can agree that "aid is a powerful tool that can either stabilize or destabilize regions". THis is useless.
+        sys = """You are a competitive debater. Win through sharp logic, not aggression.
+
+RULES:
+- START WITH ROADMAP: "Here's my speech. First, I'll address their X. Second, I'll build our case on Y."
+- Match their depth/detail (if they wrote 3 developed arguments, you write 3-4)
+- Only rebut what they ACTUALLY said - no invented arguments
+- Show causal chains step-by-step: "They claim X→Y. This breaks down because [gap]. In reality, X→Z because [step-by-step]..."
+- Examples illustrate but don't prove: "Consider X. This shows Y, but doesn't prove Z because..."
+- Always weigh: "Even granting their point, we win on [probability/magnitude/timeframe] because..."
+- Signpost clearly: "First, their X argument. Second, their Y argument."
+- Sound like spoken debate, not essay
+- Every sentence must add substance - no filler, no platitudes
 """
     convo = []
     for m in messages:
@@ -390,16 +398,20 @@ Round {debate.current_round} of {debate.num_rounds}
 
 They just said: "{last_user_msg[:200]}{'...' if len(last_user_msg) > 200 else ''}"
 
+CRITICAL: Start with a roadmap: "Here's what I'll do: first, rebut your X. Second, make our case."
+
 Respond (max 2 paragraphs). First, refute their argument directly—attack their reasoning, challenge their examples, explain why their logic fails, and point out flaws. Then, make your own points to support your position. Be direct and confrontational. Don't acknowledge or agree with anything they said. Quote specific parts of what they said and explain why those points are wrong, then build your own case."""
         else:
             prompt_now = f"""Motion: {topic_context}
 Current round: {debate.current_round} of {debate.num_rounds}
 
+CRITICAL: Start with a roadmap: "Here's my speech. First, I'll address their X argument. Second, I'll extend our case on Y."
+
 Deliver a rebuttal speech that:
 1. Tears down the opponent's key arguments (address their strongest points first).
 - When rebutting, think about NEGATING first. If they claim something, explain a proper reason why that something is NOT true
-- If that's hard, mitigate it. If they claim sometthing, explain why it's not as big of an issue as they claimed. 
-- If that's also too hard, last resort: concede to it, but explain why your argument is still more important. 
+- If that's hard, mitigate it. If they claim sometthing, explain why it's not as big of an issue as they claimed.
+- If that's also too hard, last resort: concede to it, but explain why your argument is still more important.
 2. Presents 1 new constructive arguments, explicitly label this as an "extension" or "spike"
 3. Does comparative weighing
 
@@ -410,16 +422,21 @@ Be sharp, precise, and demonstrate why your case is stronger."""
             prompt_now = f"""Topic: {topic_context}
 Round {debate.current_round} of {debate.num_rounds}
 
-Share your perspective briefly (max 2 paragraphs). Make one clear argument with a good example. Keep it conversational and concise—like explaining your position quickly to a friend."""
+CRITICAL: Start with a roadmap: "Here's what I'll do: I'll make [number] arguments about [topic]."
+
+Then share your perspective briefly (max 2 paragraphs). Build at least ONE clear argument with logical reasoning and examples. Keep it conversational and concise—like explaining your position quickly to a friend."""
         else:
             prompt_now = f"""Motion: {topic_context}
 Current round: {debate.current_round} of {debate.num_rounds}
 
+CRITICAL: Start with a roadmap: "Here's our case. First, [framework]. Second, I'll make [number] arguments: [brief labels]."
+
 Deliver an opening speech following the structure:
-1. Opening hook (2-3 sentences with real-world example)
-2. Framing & burdens
-3. 2-3 contentions (each with premise, mechanisms, weighing)
-4. Conclusion
+1. Roadmap (1-2 sentences flagging what you'll do)
+2. Opening hook (2-3 sentences with real-world example)
+3. Framing & burdens
+4. MINIMUM 1 contention, 2-3 preferred (each with premise, mechanisms, weighing)
+5. Conclusion
 
 Make your case compelling and well-structured."""
 
@@ -489,7 +506,14 @@ def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakd
         "Score the human on these metrics (0-10 each, integers only):\n"
         "1. Content & Structure – arguments are understandable and well-explained; logical links are explicit; easy to follow; jargon is handled; clear signposting/roadmap.\n"
         "2. Engagement – direct refutation, comparison, impact weighing, turns/defense. (See engagement applicability rule below for when this is scorable.)\n"
-        "3. Strategy – prioritizes win conditions; allocates time well across offense/defense; collapses to strongest arguments; avoids overinvesting in weak lines.\n"
+        "3. Strategy – prioritizes win conditions; allocates time well across offense/defense; collapses to strongest arguments; avoids overinvesting in weak lines.\n\n"
+
+        "SCORING RUBRIC (MUST FOLLOW - use this to calibrate your scores):\n"
+        "9-10: Exceptional - Tournament-winning level. Multiple well-developed arguments with clear mechanisms, strong weighing, excellent structure.\n"
+        "7-8: Strong - Clearly competitive. Good arguments with logical development, decent engagement/weighing, mostly clear structure.\n"
+        "5-6: Adequate - Makes reasonable arguments that support their side. Some logical development, basic engagement if applicable, understandable structure.\n"
+        "3-4: Developing - Has noticeable flaws but shows genuine effort. Arguments present but underdeveloped, weak engagement, unclear structure.\n"
+        "1-2: Weak - Minimal substantive engagement. Very underdeveloped or off-topic.\n\n"
 
         "(MUST FOLLOW) for strategy: As long as the user makes arguments that supports their side, that is justification for a score of >= 5\n"
 
@@ -562,7 +586,7 @@ def compute_debate_score(debate: Debate, messages: List[Message]) -> ScoreBreakd
         resp = client.chat.completions.create(
             model=scoring_model,
             messages=prompt,
-            temperature=0.4,
+            temperature=0.5,
             response_format={"type": "json_object"},  # Force JSON output
         )
     except Exception as exc:

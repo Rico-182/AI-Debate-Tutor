@@ -348,74 +348,57 @@ Output JSON schema:
 }
 """
 
-REBUTTAL_PROMPT_TMPL = """You are delivering a {format} {side} REBUTTAL speech. Motion: {motion}
+REBUTTAL_PROMPT_TMPL = """You are a {side} debater. Motion: {motion}
 
-CRITICAL: You are arguing on the {side} side. If you are Government, you SUPPORT the motion. If you are Opposition, you OPPOSE the motion. All your arguments must align with this position.
-
-OPPONENT'S SPEECH TO REBUT:
+OPPONENT'S SPEECH:
 {opponent_speech}
-
-CRITICAL ACCURACY REQUIREMENT: Only rebut arguments that are explicitly stated in the opponent's speech above. Do NOT invent, assume, or hallucinate arguments they did not make. If they only made one argument, address only that one argument. If they made two arguments, address both. Count their actual arguments and address only what they actually said.
 
 {context_block}
 
-STRICT STRUCTURE - Follow this exactly:
+NON-NEGOTIABLE REQUIREMENTS:
+1. SUBSTANCE OVER LENGTH: Match their depth and detail, not word count. If they wrote 3 developed points, you write 3+ developed points. Quality fills space naturally.
+2. ACCURACY: Only address arguments they ACTUALLY made. Never invent arguments to rebut.
+3. LOGICAL RIGOR: Every claim needs a causal chain. Show A→B→C explicitly. No logical leaps.
+4. ROADMAP: Start with a brief preview of what you'll do. E.g., "Here's what I'll do: first, I'll rebut their X argument. Second, I'll make our case on Y."
 
-1. BRIEF OPENING (1-2 sentences)
-   - State that you'll address their case and present yours
-   - NO greetings, NO thanks
+SPEECH STRUCTURE:
 
-2. REBUTTALS (First ~50% of speech)
-   CRITICAL: Only address arguments the opponent ACTUALLY made. Do NOT invent or hallucinate arguments they did not present.
-   SIGNPOST CLEARLY by counting their actual arguments: "They made [X] key argument(s). Let me address [each one/it]."
-   - NEVER claim they made more arguments than they actually did
+ROADMAP (1-2 sentences):
+- Flag what you'll do: "Here's my speech. First, I'll address their [X] argument. Second, I'll build our case on [Y]."
+- Keep it brief and clear
 
-   For EACH of their main arguments (only address arguments they actually made):
-   a) NAME their argument specifically (quote their tagline or summarize it EXACTLY as they stated it)
-   b) IDENTIFY the critical flaw:
-      - Challenge the mechanism (their causal chain has gaps or breaks down)
-      - Question the impact (overstated, other factors reduce significance)
-      - Turn it (this actually supports our side)
-   c) WEIGH why this rebuttal matters
+REBUTTAL SECTION (use for each of their arguments):
 
-   Make strategic choices:
-   - Spend more time on their strongest argument (must address it thoroughly)
-   - Efficiently address weaker arguments (if there are multiple)
-   - If you can turn their argument to support your side, explain how
-   - If they only made one argument, spend significant time thoroughly rebutting it rather than inventing others
+First, NEGATE their mechanism (when possible):
+- State their claim: "They argue X causes Y..."
+- Identify the flaw: "This breaks down because [show specific gap in causal chain]..."
+- Rebuild the logic: "In reality, X leads to Z, not Y, because [step-by-step]..."
+- Evidence use: Cite concrete examples, but clarify limits: "Example X shows Y, but doesn't prove the broader claim because..."
+- Your logic must carry the argument, not just the example
 
-3. CONSTRUCTIVE ARGUMENTS (Next ~33% of speech)
-   SIGNPOST: "Now let me present our case..."
+Then, WEIGH (always required):
+- "Even granting their point, our side wins because..."
+- Compare on metrics: probability, magnitude, timeframe
+- Make comparison explicit: "Our impact is larger because... more probable because... matters more because..."
 
-   Deliver 1-2 NEW arguments that:
-   - Support YOUR side ({side}) of the motion
-   - Fill gaps they didn't address
-   - Build on weaknesses in their framing
+SIGNPOSTING:
+- Label clearly: "First, their X argument. The flaw is... Even granting it, we win because..."
+- "Second, their Y argument. This breaks down because... Even if true, we still win because..."
+- Keep structure visible but natural - not robotic
 
-   Each argument needs: PREMISE → 2-3 WELL-DEVELOPED MECHANISMS → IMPACT
-   - Provide 2-3 INDEPENDENT mechanisms (different causal pathways)
-   - Develop EACH mechanism with 2-3 sentences
-   - SIGNPOST each mechanism: "First... Second... Third..."
-   - Each mechanism must be distinct and non-overlapping
-   (Use strategic flexibility - emphasize what's strongest)
+CONSTRUCTIVE (if space permits):
+- Add 1 new argument supporting your side
+- PREMISE → MECHANISM (show A→B→C step-by-step) → IMPACT
+- Keep it tight - rebuttals are your priority
 
-4. COMPARATIVE WEIGHING (Final ~17% of speech)
-   SIGNPOST: "Here's why our case is stronger..."
-
-   - Collapse to the key clash/question
-   - Make clear, fair comparisons: our impacts vs theirs, our mechanisms vs theirs
-   - Explain why even if parts of their case hold, your analysis is more compelling
-   - Demonstrate why the judge should vote for your side
-
-MANDATORY STYLE REQUIREMENTS:
-- ACCURACY FIRST: Only address arguments the opponent ACTUALLY made. Quote or summarize their arguments exactly as stated. Never invent arguments to rebut.
-- SIGNPOST HEAVILY: "First, they claim [quote their actual argument]...", "Second, they argue [quote their actual argument]..." - but only if they actually made multiple arguments
-- DEVELOP MECHANISMS FULLY: For constructive arguments, each mechanism needs 2-3 sentences. Don't just list them—explain the causal chain, then elaborate with evidence or examples.
-- Be sharp and precise - identify flaws clearly and explain why they matter
-- Use concrete examples voters recognize (NYT test) - NO source attribution
-- Sound like you're SPEAKING, not writing
-- Be respectful but critical - win through superior analysis, not aggression
-- When using CONTEXT: build on evidence but fill gaps with your own research
+STYLE REQUIREMENTS:
+- Only rebut what they said - no hallucinated arguments
+- Build arguments step-by-step with clear causal chains - no logical leaps
+- Examples illustrate but don't prove - logic proves
+- Match their level of development - if they wrote 3 detailed paragraphs, you write 3-4 detailed paragraphs
+- Every sentence must add substance
+- Sound like spoken debate, not written essay
+- Sharp but respectful
 """
 
 SPEECH_PROMPT_TMPL = """You are delivering a {format} {side} speech. Motion: {motion}
@@ -426,17 +409,22 @@ CRITICAL: You are arguing on the {side} side. If you are Government, you SUPPORT
 
 STRICT STRUCTURE - Follow this exactly:
 
-1. OPENING (2-3 sentences)
+1. ROADMAP (1-2 sentences) - REQUIRED
+   - Flag what you'll do: "Here's our case. First, I'll establish [framework/burden]. Second, I'll make [number] arguments: [brief labels]. Third, I'll weigh on [key metric]."
+   - Keep it brief and conversational
+   - NO greetings, NO "thank you"
+
+2. OPENING (2-3 sentences)
    - Hook with a chilling, well-known real-world example that puts the stakes on the table
    - Use that example to pose one sharp philosophical question this round must answer
    - NO greetings; NO rephrasing the motion; NO burden talk—sound like a human storyteller setting up the clash
 
-2. FRAMING & BURDENS (3-4 sentences)
+3. FRAMING & BURDENS (3-4 sentences)
    - Define the lens/framework that benefits your side
    - Establish what your side must prove vs what opposition must prove
    - Set up burdens strategically to make your job easier and theirs harder
 
-3. CONTENTIONS (2-3 arguments, well-developed)
+4. CONTENTIONS (MINIMUM 1 argument, 2-3 preferred - well-developed)
    Each contention must include: PREMISE, LINKS/WARRANTS, and WEIGHING.
    Pre-emption is optional but strategic when there's an obvious opposition response.
 
@@ -479,7 +467,7 @@ STRICT STRUCTURE - Follow this exactly:
       - Frontload why it fails or why you still win even if it's true
       - Weigh against it
 
-4. CONCLUSION (3-5 sentences)
+5. CONCLUSION (3-5 sentences)
    - Collapse the debate to the key question
    - Explain why you win on the most important layer
    - Drive home why the opposition's case cannot overcome yours
