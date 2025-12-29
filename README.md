@@ -1,6 +1,6 @@
 # DebateLab
 
-A web application for practicing debate with an AI opponent. Create structured debates with multiple rounds, submit turns via text or audio transcription, and get AI-generated responses.
+https://debatelab.ai: A web application for practicing debate with an AI opponent. Create structured debates with multiple rounds, submit turns via text or audio transcription, and get AI-generated responses.
 
 ## Tech Stack
 
